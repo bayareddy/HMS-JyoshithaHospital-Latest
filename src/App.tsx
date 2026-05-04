@@ -17,8 +17,8 @@ import { Schedules } from './pages/Schedules';
 import { Reports } from './pages/Reports';
 import { Configuration } from './pages/Configuration';
 import { TimeOffRequests } from './pages/TimeOffRequests';
-import { staffList, initialDepartments, initialTenants, initialQualifications, initialAvailabilities, initialShifts } from './data';
-import { Patient, Staff as StaffType, Department, Role, Tenant, Qualification, Availability, Shift, State, Reason, Task, ScheduleTemplate } from './types';
+import { initialDepartments, initialTenants, initialQualifications, initialAvailabilities, initialShifts } from './data';
+import { Patient, Staff as StaffType, Department, Role, Tenant, Qualification, Availability, Shift, State, Reason, Task } from './types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -28,20 +28,19 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [appointments, setAppointments] = useState<any[]>([]);
   
-  const [staff, setStaff] = useState<StaffType[]>(staffList);
+  const [staff, setStaff] = useState<StaffType[]>([]);
   const [departments, setDepartments] = useState<Department[]>(initialDepartments);
   const [roles, setRoles] = useState<Role[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>(initialTenants);
   const [qualifications, setQualifications] = useState<Qualification[]>(initialQualifications);
   const [availabilities, setAvailabilities] = useState<Availability[]>(initialAvailabilities);
-  const [shifts, setShifts] = useState<Shift[]>(initialShifts);
-  const [states, setStates] = useState<State[]>([]);
+    const [states, setStates] = useState<State[]>([]);
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, name: 'OPD', description: 'Outpatient Department', isActive: true },
     { id: 2, name: 'Surgery', description: 'Surgical procedures', isActive: true },
   ]);
-  const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [timeOffRequests, setTimeOffRequests] = useState<any[]>([]);
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffType | null>(null);
@@ -74,9 +73,7 @@ export default function App() {
         const response = await fetch('/api/staff');
         if (!response.ok) throw new Error('Failed to fetch staff');
         const data = await response.json();
-        if (data && data.length > 0) {
-          setStaff(data);
-        }
+        setStaff(data);
       } catch (error) {
         console.error('Error fetching staff:', error);
       }
@@ -131,12 +128,12 @@ export default function App() {
         console.error('Error fetching appointments:', error);
       }
     };
-    const fetchScheduleTemplates = async () => {
+    const fetchShifts = async () => {
       try {
-        const response = await fetch('/api/scheduleTemplates');
+        const response = await fetch('/api/shifts');
         if (!response.ok) throw new Error('Failed to fetch schedule templates');
         const data = await response.json();
-        setScheduleTemplates(data);
+        setShifts(data);
       } catch (error) {
         console.error('Error fetching schedule templates:', error);
       }
@@ -149,7 +146,7 @@ export default function App() {
     fetchReasons();
     fetchPatients();
     fetchAppointments();
-    fetchScheduleTemplates();
+    fetchShifts();
 
     const fetchTimeOffRequests = async () => {
       try {
@@ -255,13 +252,13 @@ export default function App() {
       const endpoint = editingStaff ? `/api/staff/${staffData.id}` : '/api/staff';
       const payload = {
         name: staffData.name,
-        roleId: Number(staffData.roleId) || Number(staffData.role) || 1,
-        departmentId: Number(staffData.departmentId) || Number(staffData.department) || 1,
+        roleId: Number(staffData.roleId) || Number(staffData.role) || (roles.length > 0 ? Number(roles[0].id) : null),
+        departmentId: Number(staffData.departmentId) || Number(staffData.department) || (departments.length > 0 ? Number(departments[0].id) : null),
         phone: staffData.phone,
         status: staffData.status,
         opdWindow: staffData.opdWindow || '15 min',
-        tenantId: Number(staffData.tenantId) || Number(staffData.tenant) || Number(staffData.hospital) || 1,
-        scheduleTemplateId: staffData.scheduleTemplateId || null,
+        tenantId: Number(staffData.tenantId) || Number(staffData.tenant) || Number(staffData.hospital) || (tenants.length > 0 ? Number(tenants[0].id) : null),
+        shiftId: staffData.shiftId || null,
         isActive: staffData.isActive
       };
       const response = await fetch(endpoint, {
@@ -290,7 +287,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to add department');
       const savedDept = await response.json();
-      setDepartments(prev => [...prev, savedDept]);
+      setDepartments(prev => [savedDept, ...prev]);
     } catch (error) {
       console.error('Error adding department:', error);
     }
@@ -336,7 +333,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to add role');
       const savedRole = await response.json();
-      setRoles(prev => [...prev, savedRole]);
+      setRoles(prev => [savedRole, ...prev]);
     } catch (error) {
       console.error('Error adding role:', error);
     }
@@ -383,7 +380,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to add tenant');
       const savedTenant = await response.json();
-      setTenants(prev => [...prev, savedTenant]);
+      setTenants(prev => [savedTenant, ...prev]);
     } catch (error) {
       console.error('Error adding tenant:', error);
     }
@@ -430,7 +427,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to add qualification');
       const savedQual = await response.json();
-      setQualifications(prev => [...prev, savedQual]);
+      setQualifications(prev => [savedQual, ...prev]);
     } catch (error) {
       console.error('Error adding qualification:', error);
     }
@@ -476,7 +473,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to add availability');
       const savedAvail = await response.json();
-      setAvailabilities(prev => [...prev, savedAvail]);
+      setAvailabilities(prev => [savedAvail, ...prev]);
     } catch (error) {
       console.error('Error adding availability:', error);
     }
@@ -513,52 +510,6 @@ export default function App() {
     }
   };
 
-  const handleAddShift = async (newShift: Shift) => {
-    try {
-      const response = await fetch('/api/shifts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newShift),
-      });
-      if (!response.ok) throw new Error('Failed to add shift');
-      const savedShift = await response.json();
-      setShifts(prev => [...prev, savedShift]);
-    } catch (error) {
-      console.error('Error adding shift:', error);
-    }
-  };
-
-  const handleUpdateShift = async (updatedShift: Shift) => {
-    try {
-      const response = await fetch(`/api/shifts/${updatedShift.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedShift),
-      });
-      if (!response.ok) throw new Error('Failed to update shift');
-      setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s));
-    } catch (error) {
-      console.error('Error updating shift:', error);
-    }
-  };
-
-  const handleDeleteShift = async (id: string) => {
-    try {
-      const response = await fetch(`/api/shifts/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Failed to delete shift');
-      setShifts(prev => prev.filter(s => s.id !== id));
-    } catch (error) {
-      console.error('Error deleting shift:', error);
-    }
-  };
-
-  const handleToggleShift = (id: string) => {
-    const shift = shifts.find(s => s.id === id);
-    if (shift) {
-      handleUpdateShift({ ...shift, isActive: !shift.isActive });
-    }
-  };
-
   const handleAddState = async (newState: State) => {
     try {
       const response = await fetch('/api/states', {
@@ -568,7 +519,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to add state');
       const savedState = await response.json();
-      setStates(prev => [...prev, savedState]);
+      setStates(prev => [savedState, ...prev]);
     } catch (error) {
       console.error('Error adding state:', error);
     }
@@ -614,7 +565,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to add reason');
       const savedReason = await response.json();
-      setReasons(prev => [...prev, savedReason]);
+      setReasons(prev => [savedReason, ...prev]);
     } catch (error) {
       console.error('Error adding reason:', error);
     }
@@ -652,7 +603,7 @@ export default function App() {
     }
   };
 
-  const handleUpdateSchedule = (id: string, assignedShifts: StaffType['assignedShifts'], availability: string, opdWindow: string) => {
+  const handleUpdateSchedule = (id: number, assignedShifts: StaffType['assignedShifts'], availability: string, opdWindow: string) => {
     setStaff(staff.map(s => s.id === id ? { ...s, assignedShifts, availability, opdWindow } : s));
   };
 
@@ -665,7 +616,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to add task');
       const savedTask = await response.json();
-      setTasks(prev => [...prev, savedTask]);
+      setTasks(prev => [savedTask, ...prev]);
     } catch (error) {
       console.error('Error adding task:', error);
     }
@@ -703,50 +654,52 @@ export default function App() {
     }
   };
 
-  const handleAddScheduleTemplate = async (newTemplate: ScheduleTemplate) => {
+  const handleAddShift = async (newTemplate: Shift) => {
     try {
-      const response = await fetch('/api/scheduleTemplates', {
+      const response = await fetch('/api/shifts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTemplate),
       });
       if (!response.ok) throw new Error('Failed to add schedule template');
       const savedTemplate = await response.json();
-      setScheduleTemplates(prev => [...prev, savedTemplate]);
+      setShifts(prev => [savedTemplate, ...prev]);
     } catch (error) {
       console.error('Error adding schedule template:', error);
+      alert('Error adding schedule template. Please check the console.');
     }
   };
 
-  const handleUpdateScheduleTemplate = async (updatedTemplate: ScheduleTemplate) => {
+  const handleUpdateShift = async (updatedTemplate: Shift) => {
     try {
-      const response = await fetch(`/api/scheduleTemplates/${updatedTemplate.id}`, {
+      const response = await fetch(`/api/shifts/${updatedTemplate.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedTemplate),
       });
       if (!response.ok) throw new Error('Failed to update schedule template');
       const savedTemplate = await response.json();
-      setScheduleTemplates(prev => prev.map(t => t.id === savedTemplate.id ? savedTemplate : t));
+      setShifts(prev => prev.map(t => t.id === savedTemplate.id ? savedTemplate : t));
     } catch (error) {
       console.error('Error updating schedule template:', error);
+      alert('Error updating schedule template. Please check the console.');
     }
   };
 
-  const handleDeleteScheduleTemplate = async (id: number) => {
+  const handleDeleteShift = async (id: number) => {
     try {
-      const response = await fetch(`/api/scheduleTemplates/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/shifts/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete schedule template');
-      setScheduleTemplates(prev => prev.filter(t => t.id !== id));
+      setShifts(prev => prev.filter(t => t.id !== id));
     } catch (error) {
       console.error('Error deleting schedule template:', error);
     }
   };
 
-  const handleToggleScheduleTemplate = (id: number) => {
-    const template = scheduleTemplates.find(t => t.id === id);
+  const handleToggleShift = (id: number) => {
+    const template = shifts.find(t => t.id === id);
     if (template) {
-      handleUpdateScheduleTemplate({ ...template, isActive: !template.isActive });
+      handleUpdateShift({ ...template, isActive: !template.isActive });
     }
   };
 
@@ -874,30 +827,29 @@ export default function App() {
       case 'dashboard': return <Dashboard patients={patients} appointments={appointments} onNavigate={setActiveTab} />;
       case 'patients': return <Patients patients={filteredPatients} onUpdatePatient={handleUpdatePatient} states={states} />;
       case 'beds': return <Beds />;
-      case 'appointments': return <Appointments appointments={appointments} onAddAppointment={handleAddAppointment} onUpdateAppointment={handleUpdateAppointment} reasons={reasons} departments={departments} doctors={staff} scheduleTemplates={scheduleTemplates} />;
+      case 'appointments': return <Appointments appointments={appointments} onAddAppointment={handleAddAppointment} onUpdateAppointment={handleUpdateAppointment} reasons={reasons} departments={departments} doctors={staff} shifts={shifts} />;
       case 'pharmacy': return <Pharmacy />;
       case 'billing': return <Billing />;
       case 'departments': return <Departments departments={departments} onOpenModal={() => setIsDeptModalOpen(true)} />;
-      case 'staff': return <Staff staffList={staff} onToggleStatus={handleToggleStaffStatus} onOpenModal={() => { setEditingStaff(null); setIsDoctorModalOpen(true); }} onEditStaff={(s) => { setEditingStaff(s); setIsDoctorModalOpen(true); }} onDeleteStaff={handleDeleteStaff} timeOffRequests={timeOffRequests} onAddTimeOffRequest={handleAddTimeOffRequest} onUpdateTimeOffRequest={handleUpdateTimeOffRequest} onDeleteTimeOffRequest={handleDeleteTimeOffRequest} currentStaffName="Staff Member" staffListForTimeOff={staff.map(s => ({ id: typeof s.id === 'string' ? parseInt(s.id.replace('S-', ''), 10) || s.id : s.id, name: s.name }))} />;
+      case 'staff': return <Staff staffList={staff} onToggleStatus={handleToggleStaffStatus} onOpenModal={() => { setEditingStaff(null); setIsDoctorModalOpen(true); }} onEditStaff={(s) => { setEditingStaff(s); setIsDoctorModalOpen(true); }} onDeleteStaff={handleDeleteStaff} timeOffRequests={timeOffRequests} onAddTimeOffRequest={handleAddTimeOffRequest} onUpdateTimeOffRequest={handleUpdateTimeOffRequest} onDeleteTimeOffRequest={handleDeleteTimeOffRequest} currentStaffName="Staff Member" staffListForTimeOff={staff.map(s => ({ id: typeof s.id === 'string' ? parseInt(String(s.id).replace('S-', ''), 10) || s.id : s.id, name: s.name }))} />;
       case 'schedules': return <Schedules staffList={staff} onEditSchedule={setScheduleModalStaff} />;
-      case 'time-off': return <TimeOffRequests timeOffRequests={timeOffRequests} onAddTimeOffRequest={handleAddTimeOffRequest} onUpdateTimeOffRequest={handleUpdateTimeOffRequest} onDeleteTimeOffRequest={handleDeleteTimeOffRequest} staffList={staff.map(s => ({ id: typeof s.id === 'string' ? parseInt(s.id.replace('S-', ''), 10) || s.id : s.id, name: s.name }))} isStaffView={false} />;
+      case 'time-off': return <TimeOffRequests timeOffRequests={timeOffRequests} onAddTimeOffRequest={handleAddTimeOffRequest} onUpdateTimeOffRequest={handleUpdateTimeOffRequest} onDeleteTimeOffRequest={handleDeleteTimeOffRequest} staffList={staff.map(s => ({ id: typeof s.id === 'string' ? parseInt(String(s.id).replace('S-', ''), 10) || s.id : s.id, name: s.name }))} isStaffView={false} />;
       case 'reports': return <Reports />;
       case 'configuration': return (
         <Configuration 
-          departments={departments} roles={roles} tenants={tenants} qualifications={qualifications} availabilities={availabilities} shifts={shifts} states={states} reasons={reasons} tasks={tasks} scheduleTemplates={scheduleTemplates}
+          departments={departments} roles={roles} tenants={tenants} qualifications={qualifications} availabilities={availabilities} shifts={shifts} states={states} reasons={reasons} tasks={tasks}
           onAddDepartment={handleAddDepartment} onUpdateDepartment={handleUpdateDepartment} onDeleteDepartment={handleDeleteDepartment} onToggleDepartment={handleToggleDepartment}
           onAddRole={handleAddRole} onUpdateRole={handleUpdateRole} onDeleteRole={handleDeleteRole} onToggleRole={handleToggleRole}
           onAddTenant={handleAddTenant} onUpdateTenant={handleUpdateTenant} onDeleteTenant={handleDeleteTenant} onToggleTenant={handleToggleTenant}
           onAddQualification={handleAddQualification} onUpdateQualification={handleUpdateQualification} onDeleteQualification={handleDeleteQualification} onToggleQualification={handleToggleQualification}
           onAddAvailability={handleAddAvailability} onUpdateAvailability={handleUpdateAvailability} onDeleteAvailability={handleDeleteAvailability} onToggleAvailability={handleToggleAvailability}
-          onAddShift={handleAddShift} onUpdateShift={handleUpdateShift} onDeleteShift={handleDeleteShift} onToggleShift={handleToggleShift}
           onAddState={handleAddState} onUpdateState={handleUpdateState} onDeleteState={handleDeleteState} onToggleState={handleToggleState}
           onAddReason={handleAddReason} onUpdateReason={handleUpdateReason} onDeleteReason={handleDeleteReason} onToggleReason={handleToggleReason}
           onAddTask={handleAddTask} onUpdateTask={handleUpdateTask} onDeleteTask={handleDeleteTask} onToggleTask={handleToggleTask}
-          onAddScheduleTemplate={handleAddScheduleTemplate} onUpdateScheduleTemplate={handleUpdateScheduleTemplate} onDeleteScheduleTemplate={handleDeleteScheduleTemplate} onToggleScheduleTemplate={handleToggleScheduleTemplate}
+          onAddShift={handleAddShift} onUpdateShift={handleUpdateShift} onDeleteShift={handleDeleteShift} onToggleShift={handleToggleShift}
         />
       );
-      default: return <Dashboard patients={patients} onNavigate={setActiveTab} />;
+      default: return <Dashboard patients={patients} appointments={appointments} onNavigate={setActiveTab} />;
     }
   };
 
@@ -946,7 +898,7 @@ export default function App() {
         tenants={tenants}
         qualifications={qualifications}
         editingStaff={editingStaff}
-        scheduleTemplates={scheduleTemplates}
+        shifts={shifts}
       />
       <NewDepartmentModal
         isOpen={isDeptModalOpen}

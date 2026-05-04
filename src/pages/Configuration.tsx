@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Department, Role, Tenant, Qualification, Availability, Shift, State, Reason, Task, ScheduleTemplate, ScheduleTask } from '../types';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
+import { Department, Role, Tenant, Qualification, Availability, Shift, State, Reason, Task, ShiftTask } from '../types';
 import { Building2, Shield, MapPin, Plus, Edit, Trash2, X, GraduationCap, Clock, Calendar, List, User } from 'lucide-react';
 
 interface ConfigurationProps {
@@ -12,7 +13,6 @@ interface ConfigurationProps {
   states: State[];
   reasons: Reason[];
   tasks: Task[];
-  scheduleTemplates: ScheduleTemplate[];
   onAddDepartment: (dept: Department) => void;
   onUpdateDepartment: (dept: Department) => void;
   onDeleteDepartment: (id: number) => void;
@@ -33,10 +33,6 @@ interface ConfigurationProps {
   onUpdateAvailability: (avail: Availability) => void;
   onDeleteAvailability: (id: string) => void;
   onToggleAvailability: (id: string) => void;
-  onAddShift: (shift: Shift) => void;
-  onUpdateShift: (shift: Shift) => void;
-  onDeleteShift: (id: string) => void;
-  onToggleShift: (id: string) => void;
   onAddState: (state: State) => void;
   onUpdateState: (state: State) => void;
   onDeleteState: (id: number) => void;
@@ -49,26 +45,25 @@ interface ConfigurationProps {
   onUpdateTask: (task: Task) => void;
   onDeleteTask: (id: number) => void;
   onToggleTask: (id: number) => void;
-  onAddScheduleTemplate: (template: ScheduleTemplate) => void;
-  onUpdateScheduleTemplate: (template: ScheduleTemplate) => void;
-  onDeleteScheduleTemplate: (id: number) => void;
-  onToggleScheduleTemplate: (id: number) => void;
+  onAddShift: (template: Shift) => void;
+  onUpdateShift: (template: Shift) => void;
+  onDeleteShift: (id: number) => void;
+  onToggleShift: (id: number) => void;
 }
 
 export function Configuration({ 
-  departments, roles, tenants, qualifications, availabilities, shifts, states, reasons, tasks, scheduleTemplates,
+  departments, roles, tenants, qualifications, availabilities, shifts, states, reasons, tasks,
   onAddDepartment, onUpdateDepartment, onDeleteDepartment, onToggleDepartment,
   onAddRole, onUpdateRole, onDeleteRole, onToggleRole,
   onAddTenant, onUpdateTenant, onDeleteTenant, onToggleTenant,
   onAddQualification, onUpdateQualification, onDeleteQualification, onToggleQualification,
   onAddAvailability, onUpdateAvailability, onDeleteAvailability, onToggleAvailability,
-  onAddShift, onUpdateShift, onDeleteShift, onToggleShift,
   onAddState, onUpdateState, onDeleteState, onToggleState,
   onAddReason, onUpdateReason, onDeleteReason, onToggleReason,
   onAddTask, onUpdateTask, onDeleteTask, onToggleTask,
-  onAddScheduleTemplate, onUpdateScheduleTemplate, onDeleteScheduleTemplate, onToggleScheduleTemplate
+  onAddShift, onUpdateShift, onDeleteShift, onToggleShift
 }: ConfigurationProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'roles' | 'departments' | 'tenants' | 'qualifications' | 'availabilities' | 'tasks' | 'scheduleTemplates' | 'states' | 'reasons'>('roles');
+  const [activeSubTab, setActiveSubTab] = useState<'roles' | 'departments' | 'tenants' | 'qualifications' | 'availabilities' | 'tasks' | 'shifts' | 'states' | 'reasons'>('roles');
 
   const [newRole, setNewRole] = useState({ name: '', description: '' });
   const [editingRoleId, setEditingRoleId] = useState<any>(null);
@@ -85,9 +80,6 @@ export function Configuration({
   const [newAvail, setNewAvail] = useState({ name: '', description: '' });
   const [editingAvailId, setEditingAvailId] = useState<any>(null);
 
-  const [newShift, setNewShift] = useState({ name: '', days: [] as string[] });
-  const [editingShiftId, setEditingShiftId] = useState<any>(null);
-
   const [newState, setNewState] = useState({ name: '', stateCode: '' });
   const [editingStateId, setEditingStateId] = useState<any>(null);
 
@@ -97,25 +89,44 @@ export function Configuration({
   const [newTask, setNewTask] = useState({ name: '', description: '' });
   const [editingTaskId, setEditingTaskId] = useState<any>(null);
 
-  const [newScheduleTemplate, setNewScheduleTemplate] = useState({ 
+  const [newShift, setNewShift] = useState({ 
     name: '', 
     opdSlotTime: 15,
     schedule: [
-      { day: 'Monday', tasks: [] as ScheduleTask[] },
-      { day: 'Tuesday', tasks: [] as ScheduleTask[] },
-      { day: 'Wednesday', tasks: [] as ScheduleTask[] },
-      { day: 'Thursday', tasks: [] as ScheduleTask[] },
-      { day: 'Friday', tasks: [] as ScheduleTask[] },
-      { day: 'Saturday', tasks: [] as ScheduleTask[] },
-      { day: 'Sunday', tasks: [] as ScheduleTask[] }
-    ] as { day: string; tasks: ScheduleTask[] }[]
+      { day: 'Monday', tasks: [] as ShiftTask[] },
+      { day: 'Tuesday', tasks: [] as ShiftTask[] },
+      { day: 'Wednesday', tasks: [] as ShiftTask[] },
+      { day: 'Thursday', tasks: [] as ShiftTask[] },
+      { day: 'Friday', tasks: [] as ShiftTask[] },
+      { day: 'Saturday', tasks: [] as ShiftTask[] },
+      { day: 'Sunday', tasks: [] as ShiftTask[] }
+    ] as { day: string; tasks: ShiftTask[] }[]
   });
-  const [editingScheduleTemplateId, setEditingScheduleTemplateId] = useState<any>(null);
+  const [editingShiftId, setEditingShiftId] = useState<any>(null);
   const [activeDayTab, setActiveDayTab] = useState<'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'>('Monday');
 
   const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
   const SLOT_TIME_OPTIONS = [5, 10, 15, 20, 30];
+
+  const [deleteInfo, setDeleteInfo] = useState<{ id: any; type: string; title: string } | null>(null);
+
+  const confirmDelete = () => {
+    if (!deleteInfo) return;
+    switch (deleteInfo.type) {
+      case 'role': onDeleteRole(deleteInfo.id); break;
+      case 'dept': onDeleteDepartment(deleteInfo.id); break;
+      case 'tenant': onDeleteTenant(deleteInfo.id); break;
+      case 'qual': onDeleteQualification(deleteInfo.id); break;
+      case 'avail': onDeleteAvailability(deleteInfo.id); break;
+      case 'shift': onDeleteShift(deleteInfo.id); break;
+      case 'state': onDeleteState(deleteInfo.id); break;
+      case 'reason': onDeleteReason(deleteInfo.id); break;
+      case 'task': onDeleteTask(deleteInfo.id); break;
+      case 'template': onDeleteShift(deleteInfo.id); break;
+    }
+    setDeleteInfo(null);
+  };
 
   // --- Roles ---
   const handleSaveRole = () => {
@@ -235,29 +246,6 @@ export function Configuration({
     setNewAvail({ name: '', description: '' });
   };
 
-  // --- Shifts ---
-  const handleSaveShift = () => {
-    if (!newShift.name || newShift.days.length === 0) return;
-    const shiftData = editingShiftId ? { ...newShift, id: editingShiftId } : newShift;
-    if (editingShiftId) {
-      onUpdateShift(shiftData as Shift);
-      setEditingShiftId(null);
-    } else {
-      onAddShift(shiftData as Shift);
-    }
-    setNewShift({ name: '', days: [] });
-  };
-
-  const handleEditShift = (shift: Shift) => {
-    setEditingShiftId(shift.id);
-    setNewShift({ name: shift.name, days: shift.days });
-  };
-
-  const cancelEditShift = () => {
-    setEditingShiftId(null);
-    setNewShift({ name: '', days: [] });
-  };
-
   const handleToggleDay = (day: string) => {
     setNewShift(prev => ({
       ...prev,
@@ -341,35 +329,23 @@ export function Configuration({
     setNewTask({ name: '', description: '' });
   };
 
-  // --- Schedule Templates ---
-  const handleSaveScheduleTemplate = () => {
-    if (!newScheduleTemplate.name) return;
-    const templateData = editingScheduleTemplateId ? { ...newScheduleTemplate, id: editingScheduleTemplateId } : newScheduleTemplate;
-    if (editingScheduleTemplateId) {
-      onUpdateScheduleTemplate(templateData as ScheduleTemplate);
-      setEditingScheduleTemplateId(null);
-    } else {
-      onAddScheduleTemplate(templateData as ScheduleTemplate);
+  // --- Shifts ---
+  const handleSaveShift = () => {
+    if (!newShift.name) {
+      alert("Please provide a template name");
+      return;
     }
-    setNewScheduleTemplate({ 
+    const templateData = editingShiftId ? { ...newShift, id: editingShiftId } : newShift;
+    if (editingShiftId) {
+      onUpdateShift(templateData as Shift);
+      setEditingShiftId(null);
+    } else {
+      onAddShift(templateData as Shift);
+    }
+    setNewShift({ 
       name: '', 
       opdSlotTime: 15,
       schedule: [
-        { day: 'Monday', tasks: [] },
-        { day: 'Tuesday', tasks: [] },
-        { day: 'Wednesday', tasks: [] },
-        { day: 'Thursday', tasks: [] },
-        { day: 'Friday', tasks: [] }
-      ]
-    });
-  };
-
-  const handleEditScheduleTemplate = (template: ScheduleTemplate) => {
-    setEditingScheduleTemplateId(template.id);
-    setNewScheduleTemplate({
-      name: template.name,
-      opdSlotTime: template.opdSlotTime,
-      schedule: template.schedule || [
         { day: 'Monday', tasks: [] },
         { day: 'Tuesday', tasks: [] },
         { day: 'Wednesday', tasks: [] },
@@ -381,9 +357,21 @@ export function Configuration({
     });
   };
 
-  const cancelEditScheduleTemplate = () => {
-    setEditingScheduleTemplateId(null);
-    setNewScheduleTemplate({ 
+  const handleEditShift = (template: Shift) => {
+    setEditingShiftId(template.id);
+    setNewShift({
+      name: template.name,
+      opdSlotTime: template.opdSlotTime,
+      schedule: WEEKDAYS.map(day => {
+        const existingDay = (template.schedule || []).find(s => s.day === day);
+        return existingDay ? { ...existingDay, tasks: existingDay.tasks || [] } : { day, tasks: [] };
+      })
+    });
+  };
+
+  const cancelEditShift = () => {
+    setEditingShiftId(null);
+    setNewShift({ 
       name: '', 
       opdSlotTime: 15,
       schedule: [
@@ -399,33 +387,33 @@ export function Configuration({
   };
 
   const addTaskToDay = (day: string) => {
-    setNewScheduleTemplate(prev => ({
+    setNewShift(prev => ({
       ...prev,
       schedule: prev.schedule.map(ds => 
         ds.day === day 
-          ? { ...ds, tasks: [...ds.tasks, { id: Date.now(), taskName: '', fromTime: '09:00', toTime: '17:00' }] }
+          ? { ...ds, tasks: [...(ds.tasks || []), { id: Date.now(), taskName: '', fromTime: '09:00', toTime: '17:00' }] }
           : ds
       )
     }));
   };
 
-  const updateTaskInDay = (day: string, taskId: number, field: keyof ScheduleTask, value: string) => {
-    setNewScheduleTemplate(prev => ({
+  const updateTaskInDay = (day: string, taskId: number, field: keyof ShiftTask, value: string) => {
+    setNewShift(prev => ({
       ...prev,
       schedule: prev.schedule.map(ds => 
         ds.day === day 
-          ? { ...ds, tasks: ds.tasks.map(t => t.id === taskId ? { ...t, [field]: value } : t) }
+          ? { ...ds, tasks: (ds.tasks || []).map(t => t.id === taskId ? { ...t, [field]: value } : t) }
           : ds
       )
     }));
   };
 
   const removeTaskFromDay = (day: string, taskId: number) => {
-    setNewScheduleTemplate(prev => ({
+    setNewShift(prev => ({
       ...prev,
       schedule: prev.schedule.map(ds => 
         ds.day === day 
-          ? { ...ds, tasks: ds.tasks.filter(t => t.id !== taskId) }
+          ? { ...ds, tasks: (ds.tasks || []).filter(t => t.id !== taskId) }
           : ds
       )
     }));
@@ -471,10 +459,10 @@ export function Configuration({
           Tasks
         </button>
         <button 
-          onClick={() => setActiveSubTab('scheduleTemplates')}
-          className={`px-4 py-2 text-[13px] font-medium rounded-md transition-colors ${activeSubTab === 'scheduleTemplates' ? 'bg-accent text-white' : 'bg-surface text-gray-600 hover:bg-surface2'}`}
+          onClick={() => setActiveSubTab('shifts')}
+          className={`px-4 py-2 text-[13px] font-medium rounded-md transition-colors ${activeSubTab === 'shifts' ? 'bg-accent text-white' : 'bg-surface text-gray-600 hover:bg-surface2'}`}
         >
-          Schedule Template
+          Shift
         </button>
          <button 
            onClick={() => setActiveSubTab('states')}
@@ -533,7 +521,7 @@ export function Configuration({
                           {t.isActive === false ? 'Enable' : 'Disable'}
                         </button>
                         <button onClick={() => handleEditTask(t)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this task?')) onDeleteTask(t.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: t.id, type: 'task', title: 'Task' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -543,31 +531,31 @@ export function Configuration({
           </div>
         )}
 
-        {activeSubTab === 'scheduleTemplates' && (
+        {activeSubTab === 'shifts' && (
           <div>
             <div className="p-4 border-b border-border-subtle bg-surface2 flex flex-col gap-3">
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="block text-[11px] text-gray-500 mb-1">Template Name</label>
-                  <input className="w-full p-2 border border-border-subtle rounded-md text-[12px] focus:border-accent outline-none" placeholder="e.g. Standard OPD Schedule" value={newScheduleTemplate.name} onChange={e => setNewScheduleTemplate({...newScheduleTemplate, name: e.target.value})} />
+                  <label className="block text-[11px] text-gray-500 mb-1">Shift Name</label>
+                  <input className="w-full p-2 border border-border-subtle rounded-md text-[12px] focus:border-accent outline-none" placeholder="e.g. Standard OPD Schedule" value={newShift.name} onChange={e => setNewShift({...newShift, name: e.target.value})} />
                 </div>
                 <div className="w-40">
                   <label className="block text-[11px] text-gray-500 mb-1">OPD Slot (min)</label>
-                  <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] focus:border-accent outline-none" value={newScheduleTemplate.opdSlotTime} onChange={e => setNewScheduleTemplate({...newScheduleTemplate, opdSlotTime: parseInt(e.target.value)})}>
+                  <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] focus:border-accent outline-none" value={newShift.opdSlotTime} onChange={e => setNewShift({...newShift, opdSlotTime: parseInt(e.target.value)})}>
                     {SLOT_TIME_OPTIONS.map(slot => (
                       <option key={slot} value={slot}>{slot} min</option>
                     ))}
                   </select>
                 </div>
                 <div className="flex gap-2">
-                  {editingScheduleTemplateId && (
-                    <button onClick={cancelEditScheduleTemplate} className="px-3 py-2 bg-surface text-gray-600 border border-border-subtle rounded-md text-[12px] font-medium hover:bg-surface2 flex items-center gap-1.5 h-[34px]">
+                  {editingShiftId && (
+                    <button onClick={cancelEditShift} className="px-3 py-2 bg-surface text-gray-600 border border-border-subtle rounded-md text-[12px] font-medium hover:bg-surface2 flex items-center gap-1.5 h-[34px]">
                       <X className="w-3.5 h-3.5" /> Cancel
                     </button>
                   )}
-                  <button onClick={handleSaveScheduleTemplate} className="px-4 py-2 bg-accent text-white rounded-md text-[12px] font-medium hover:bg-accent-dark flex items-center gap-1.5 h-[34px]">
-                    {editingScheduleTemplateId ? <Edit className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />} 
-                    {editingScheduleTemplateId ? 'Update' : 'Add'}
+                  <button onClick={handleSaveShift} className="px-4 py-2 bg-accent text-white rounded-md text-[12px] font-medium hover:bg-accent-dark flex items-center gap-1.5 h-[34px]">
+                    {editingShiftId ? <Edit className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />} 
+                    {editingShiftId ? 'Update' : 'Add'}
                   </button>
                 </div>
               </div>
@@ -593,7 +581,7 @@ export function Configuration({
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {newScheduleTemplate.schedule.find(s => s.day === activeDayTab)?.tasks.map(task => (
+                  {(newShift.schedule.find(s => s.day === activeDayTab)?.tasks || []).map(task => (
                     <div key={task.id} className="flex gap-2 items-center">
                       <select 
                         className="flex-1 p-1.5 border border-border-subtle rounded text-[11px] focus:border-accent outline-none"
@@ -623,7 +611,7 @@ export function Configuration({
                       </button>
                     </div>
                   ))}
-                  {newScheduleTemplate.schedule.find(s => s.day === activeDayTab)?.tasks.length === 0 && (
+                  {(newShift.schedule.find(s => s.day === activeDayTab)?.tasks?.length || 0) === 0 && (
                     <div className="text-[11px] text-gray-400 text-center py-2">No tasks scheduled. Click "Add Task" to add.</div>
                   )}
                 </div>
@@ -632,14 +620,14 @@ export function Configuration({
             <table className="w-full text-left text-[12px] border-collapse">
               <thead>
                 <tr className="border-b border-border-subtle">
-                  <th className="py-2.5 px-4 font-medium text-[11px] text-gray-500 w-[200px]">Template Name</th>
+                  <th className="py-2.5 px-4 font-medium text-[11px] text-gray-500 w-[200px]">Shift Name</th>
                   <th className="py-2.5 px-4 font-medium text-[11px] text-gray-500">OPD Slot</th>
                   <th className="py-2.5 px-4 font-medium text-[11px] text-gray-500">Schedule</th>
                   <th className="py-2.5 px-4 font-medium text-[11px] text-gray-500 w-[160px]">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {scheduleTemplates.map(t => (
+                {shifts.map(t => (
                   <tr key={t.id} className={`border-b border-border-subtle last:border-0 hover:bg-[#fafaf9] ${t.isActive === false ? 'opacity-60' : ''}`}>
                     <td className="py-2.5 px-4 font-medium flex items-center gap-2"><Calendar className="w-3.5 h-3.5 text-accent" /> {t.name}</td>
                     <td className="py-2.5 px-4">{t.opdSlotTime} min</td>
@@ -654,11 +642,11 @@ export function Configuration({
                     </td>
                     <td className="py-2.5 px-4">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => onToggleScheduleTemplate(t.id)} className={`text-[10px] px-2 py-1 rounded border ${t.isActive === false ? 'border-accent text-accent bg-accent/10' : 'border-border-subtle text-gray-600 hover:bg-surface2'}`}>
+                        <button onClick={() => onToggleShift(t.id)} className={`text-[10px] px-2 py-1 rounded border ${t.isActive === false ? 'border-accent text-accent bg-accent/10' : 'border-border-subtle text-gray-600 hover:bg-surface2'}`}>
                           {t.isActive === false ? 'Enable' : 'Disable'}
                         </button>
-                        <button onClick={() => handleEditScheduleTemplate(t)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this template?')) onDeleteScheduleTemplate(t.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleEditShift(t)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: t.id, type: 'template', title: 'Template' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -710,7 +698,7 @@ export function Configuration({
                           {a.isActive === false ? 'Enable' : 'Disable'}
                         </button>
                         <button onClick={() => handleEditAvail(a)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this availability status?')) onDeleteAvailability(a.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: a.id, type: 'avail', title: 'Availability Status' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -762,7 +750,7 @@ export function Configuration({
                           {r.isActive === false ? 'Enable' : 'Disable'}
                         </button>
                         <button onClick={() => handleEditRole(r)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this role?')) onDeleteRole(r.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: r.id, type: 'role', title: 'Role' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -814,7 +802,7 @@ export function Configuration({
                           {d.isActive === false ? 'Enable' : 'Disable'}
                         </button>
                         <button onClick={() => handleEditDept(d)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this department?')) onDeleteDepartment(d.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: d.id, type: 'dept', title: 'Department' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -866,7 +854,7 @@ export function Configuration({
                           {t.isActive === false ? 'Enable' : 'Disable'}
                         </button>
                         <button onClick={() => handleEditTenant(t)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this hospital?')) onDeleteTenant(t.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: t.id, type: 'tenant', title: 'Hospital' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -918,7 +906,7 @@ export function Configuration({
                           {q.isActive === false ? 'Enable' : 'Disable'}
                         </button>
                         <button onClick={() => handleEditQual(q)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this qualification?')) onDeleteQualification(q.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: q.id, type: 'qual', title: 'Qualification' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -970,7 +958,7 @@ export function Configuration({
                           {s.isActive === false ? 'Enable' : 'Disable'}
                         </button>
                         <button onClick={() => handleEditState(s)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this state?')) onDeleteState(s.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: s.id, type: 'state', title: 'State' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -1022,7 +1010,7 @@ export function Configuration({
                           {r.isActive === false ? 'Enable' : 'Disable'}
                         </button>
                         <button onClick={() => handleEditReason(r)} className="text-accent hover:text-accent-dark p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { if (window.confirm('Are you sure you want to delete this reason?')) onDeleteReason(r.id); }} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteInfo({ id: r.id, type: 'reason', title: 'Reason' })} className="text-danger hover:text-red-700 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -1032,6 +1020,14 @@ export function Configuration({
           </div>
         )}
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteInfo !== null}
+        onClose={() => setDeleteInfo(null)}
+        onConfirm={confirmDelete}
+        title={`Delete ${deleteInfo?.title}`}
+        message={`Are you sure you want to delete this ${deleteInfo?.title?.toLowerCase()}? This action cannot be undone.`}
+      />
     </div>
   );
 }

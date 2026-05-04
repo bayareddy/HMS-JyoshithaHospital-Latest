@@ -20,7 +20,7 @@ export function NewDepartmentModal({ isOpen, onClose, onSave }: ModalProps) {
     onSave({
       name: formData.name,
       description: formData.description || ''
-    });
+    } as Department);
     onClose();
   };
 

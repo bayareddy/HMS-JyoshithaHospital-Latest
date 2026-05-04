@@ -47,11 +47,11 @@ export const initialDepartments: Department[] = [
 ];
 
 export const initialRoles: Role[] = [
-  { id: 1, name: 'Doctor', description: 'General Medical Practitioner' },
-  { id: 2, name: 'Senior Consultant', description: 'Senior Specialist' },
-  { id: 3, name: 'Surgeon', description: 'Surgical Specialist' },
-  { id: 4, name: 'Head Nurse', description: 'Nursing Department Head' },
-  { id: 5, name: 'Staff Nurse', description: 'General Nursing Staff' },
+  { id: "", name: 'Doctor', description: 'General Medical Practitioner' },
+  { id: "", name: 'Senior Consultant', description: 'Senior Specialist' },
+  { id: "", name: 'Surgeon', description: 'Surgical Specialist' },
+  { id: "", name: 'Head Nurse', description: 'Nursing Department Head' },
+  { id: "", name: 'Staff Nurse', description: 'General Nursing Staff' },
 ];
 
 export const initialTenants: Tenant[] = [
@@ -61,28 +61,28 @@ export const initialTenants: Tenant[] = [
 ];
 
 export const initialQualifications: Qualification[] = [
-  { id: 1, name: 'MBBS', description: 'Bachelor of Medicine, Bachelor of Surgery' },
-  { id: 2, name: 'MD', description: 'Doctor of Medicine' },
-  { id: 3, name: 'MS', description: 'Master of Surgery' },
-  { id: 4, name: 'BSc Nursing', description: 'Bachelor of Science in Nursing' },
-  { id: 5, name: 'MSc Nursing', description: 'Master of Science in Nursing' },
+  { id: "", name: 'MBBS', description: 'Bachelor of Medicine, Bachelor of Surgery' },
+  { id: "", name: 'MD', description: 'Doctor of Medicine' },
+  { id: "", name: 'MS', description: 'Master of Surgery' },
+  { id: "", name: 'BSc Nursing', description: 'Bachelor of Science in Nursing' },
+  { id: "", name: 'MSc Nursing', description: 'Master of Science in Nursing' },
 ];
 
 export const initialAvailabilities: Availability[] = [
-  { id: 1, name: 'Available', description: 'Doctor is available for consultation' },
-  { id: 2, name: 'In Surgery', description: 'Doctor is currently in surgery' },
-  { id: 3, name: 'On Leave', description: 'Doctor is on leave' },
-  { id: 4, name: 'Off Duty', description: 'Doctor is off duty' },
-  { id: 5, name: 'OPD', description: 'Outpatient Department' },
+  { id: "", name: 'Available', description: 'Doctor is available for consultation' },
+  { id: "", name: 'In Surgery', description: 'Doctor is currently in surgery' },
+  { id: "", name: 'On Leave', description: 'Doctor is on leave' },
+  { id: "", name: 'Off Duty', description: 'Doctor is off duty' },
+  { id: "", name: 'OPD', description: 'Outpatient Department' },
 ];
 
 export const initialShifts: Shift[] = [
-  { id: 1, name: '9AM–5PM', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
-  { id: 2, name: '7AM–3PM', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
-  { id: 3, name: '8AM–4PM', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
-  { id: 4, name: '6AM–2PM', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
-  { id: 5, name: '2PM–10PM', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
-  { id: 6, name: 'Night Shift', days: ['Saturday', 'Sunday'] },
+  { id: 1, name: '9AM–5PM', opdSlotTime: 15, schedule: [{ day: 'Monday', tasks: [] }] },
+  { id: 2, name: '7AM–3PM', opdSlotTime: 15, schedule: [{ day: 'Monday', tasks: [] }] },
+  { id: 3, name: '8AM–4PM', opdSlotTime: 15, schedule: [{ day: 'Monday', tasks: [] }] },
+  { id: 4, name: '6AM–2PM', opdSlotTime: 15, schedule: [{ day: 'Monday', tasks: [] }] },
+  { id: 5, name: '2PM–10PM', opdSlotTime: 15, schedule: [{ day: 'Monday', tasks: [] }] },
+  { id: 6, name: 'Night Shift', opdSlotTime: 15, schedule: [{ day: 'Saturday', tasks: [] }] },
 ];
 
 export const staffList: Staff[] = [

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Staff, Department, Role, Tenant, Qualification, ScheduleTemplate } from '../types';
+import { Staff, Department, Role, Tenant, Qualification, Shift } from '../types';
 import { Plus, X } from 'lucide-react';
 
 interface ModalProps {
@@ -11,13 +11,13 @@ interface ModalProps {
   tenants: Tenant[];
   qualifications: Qualification[];
   editingStaff: Staff | null;
-  scheduleTemplates?: ScheduleTemplate[];
+  shifts?: Shift[];
 }
 
-export function NewDoctorModal({ isOpen, onClose, onSave, departments, roles, tenants, qualifications, editingStaff, scheduleTemplates = [] }: ModalProps) {
+export function NewDoctorModal({ isOpen, onClose, onSave, departments, roles, tenants, qualifications, editingStaff, shifts = [] }: ModalProps) {
   const [formData, setFormData] = useState({
     name: '', role: '', department: '', specialization: [] as string[], qualifications: [] as string[],
-    phone: '', hospital: '', scheduleTemplate: ''
+    phone: '', hospital: '', shift: ''
   });
   const [newSpec, setNewSpec] = useState('');
 
@@ -31,10 +31,10 @@ export function NewDoctorModal({ isOpen, onClose, onSave, departments, roles, te
         qualifications: editingStaff.qualifications || [],
         phone: editingStaff.phone || '',
         hospital: editingStaff.hospital || editingStaff.tenant?.toString() || '',
-        scheduleTemplate: editingStaff.scheduleTemplateId ? editingStaff.scheduleTemplateId.toString() : ''
+        shift: editingStaff.shiftId ? editingStaff.shiftId.toString() : ''
       });
     } else if (isOpen) {
-      setFormData({ name: '', role: '', department: '', specialization: [], qualifications: [], phone: '', hospital: '', scheduleTemplate: '' });
+      setFormData({ name: '', role: '', department: '', specialization: [], qualifications: [], phone: '', hospital: '', shift: '' });
     }
   }, [editingStaff, isOpen]);
 
@@ -53,25 +53,25 @@ export function NewDoctorModal({ isOpen, onClose, onSave, departments, roles, te
     const newDoc: Staff = {
       id: editingStaff ? editingStaff.id : 0,
       name: formData.name,
-      role: formData.role || (roles.length > 0 ? String(roles[0].id) : '1'),
-      roleId: selectedRole ? Number(selectedRole.id) : 1,
+      role: formData.role || (roles.length > 0 ? String(roles[0].name) : 'Doctor'),
+      roleId: selectedRole ? Number(selectedRole.id) : (roles.length > 0 ? Number(roles[0].id) : undefined),
       department: formData.department,
-      departmentId: selectedDept ? Number(selectedDept.id) : 1,
+      departmentId: selectedDept ? Number(selectedDept.id) : (departments.length > 0 ? Number(departments[0].id) : undefined),
       specialization: formData.specialization.length > 0 ? formData.specialization : ['General'],
       qualifications: formData.qualifications,
       phone: formData.phone || '',
       status: editingStaff ? editingStaff.status : 'admitted',
       assignedShifts: editingStaff ? editingStaff.assignedShifts : [],
-      hospital: formData.hospital || (tenants.length > 0 ? String(tenants[0].id) : '1'),
-      tenant: selectedTenant ? Number(selectedTenant.id) : 1,
-      tenantId: selectedTenant ? Number(selectedTenant.id) : 1,
-      scheduleTemplate: formData.scheduleTemplate,
-      scheduleTemplateId: formData.scheduleTemplate ? parseInt(formData.scheduleTemplate) : undefined,
+      hospital: formData.hospital || (tenants.length > 0 ? String(tenants[0].name) : 'Hospital'),
+      tenant: selectedTenant ? Number(selectedTenant.id) : undefined,
+      tenantId: selectedTenant ? Number(selectedTenant.id) : (tenants.length > 0 ? Number(tenants[0].id) : undefined),
+      shift: formData.shift,
+      shiftId: formData.shift ? parseInt(formData.shift) : undefined,
       isActive: editingStaff ? editingStaff.isActive : true
     };
     
     onSave(newDoc);
-    setFormData({ name: '', role: '', department: '', specialization: [], qualifications: [], phone: '', hospital: '', scheduleTemplate: '' });
+    setFormData({ name: '', role: '', department: '', specialization: [], qualifications: [], phone: '', hospital: '', shift: '' });
     onClose();
   };
 
@@ -177,10 +177,10 @@ export function NewDoctorModal({ isOpen, onClose, onSave, departments, roles, te
           </div>
 
           <div>
-            <label className="block text-[11px] text-gray-500 mb-1">Schedule Template</label>
-            <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={formData.scheduleTemplate} onChange={e => setFormData({...formData, scheduleTemplate: e.target.value})}>
-              <option value="">Select Schedule Template</option>
-              {scheduleTemplates.filter(t => t.isActive !== false).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            <label className="block text-[11px] text-gray-500 mb-1">Shift</label>
+            <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={formData.shift} onChange={e => setFormData({...formData, shift: e.target.value})}>
+              <option value="">Select Shift</option>
+              {shifts.filter(t => t.isActive !== false).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
         </div>

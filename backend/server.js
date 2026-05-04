@@ -22,7 +22,6 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
 app.use(express.json());
 
 // Health check endpoint
@@ -43,12 +42,11 @@ app.use('/api/shifts', shiftsRoutes);
 app.use('/api/states', statesRoutes);
 app.use('/api/reasons', reasonsRoutes);
 app.use('/api/tasks', tasksRoutes);
-app.use('/api/scheduleTemplates', require('./routes/scheduleTemplates'));
 app.use('/api/timeOff', require('./routes/timeOff'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
+  console.error('Error in middleware:', err);
   res.status(500).json({ error: err.message });
 });
 

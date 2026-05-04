@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Badge } from '../components/Badge';
 import { Plus, Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { TimeOffRequest } from '../types';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 interface TimeOffRequestsProps {
   timeOffRequests: TimeOffRequest[];
@@ -439,33 +440,19 @@ export function TimeOffRequests({
     </div>
   );
 
-    const deleteModal = requestToDelete !== null ? (
-    <div className="fixed inset-0 bg-black/35 z-50 flex items-center justify-center p-4" onClick={() => setRequestToDelete(null)}>
-      <div className="bg-surface rounded-xl border border-border-subtle w-full max-w-[400px] shadow-2xl p-5" onClick={e => e.stopPropagation()}>
-        <h3 className="text-[16px] font-medium text-gray-900 mb-2">Delete Time Off Request</h3>
-        <p className="text-[13px] text-gray-600 mb-6">Are you sure you want to delete this time off request? This action cannot be undone.</p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => setRequestToDelete(null)}
-            className="px-4 py-2 border border-border-subtle rounded-md text-[13px] font-medium text-gray-700 bg-surface hover:bg-surface2 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              if (requestToDelete) {
-                onDeleteTimeOffRequest?.(requestToDelete);
-              }
-              setRequestToDelete(null);
-            }}
-            className="px-4 py-2 bg-danger text-white rounded-md text-[13px] font-medium hover:bg-red-700 transition-colors"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  ) : null;
+    const deleteModal = (
+      <DeleteConfirmationModal
+        isOpen={requestToDelete !== null}
+        onClose={() => setRequestToDelete(null)}
+        onConfirm={() => {
+          if (requestToDelete) {
+            onDeleteTimeOffRequest?.(requestToDelete);
+          }
+        }}
+        title="Delete Time Off Request"
+        message="Are you sure you want to delete this time off request? This action cannot be undone."
+      />
+    );
 
   return embedded ? (
     <>

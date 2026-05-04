@@ -3,6 +3,7 @@ import { Staff as StaffType } from '../types';
 import { Badge } from '../components/Badge';
 import { Plus, Power, PowerOff, Edit, Trash2, Calendar, Users } from 'lucide-react';
 import { TimeOffRequests } from './TimeOffRequests';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 interface StaffProps {
   staffList: StaffType[];
@@ -20,6 +21,15 @@ interface StaffProps {
 
 export function Staff({ staffList, onToggleStatus, onOpenModal, onEditStaff, onDeleteStaff, timeOffRequests = [], onAddTimeOffRequest, onUpdateTimeOffRequest, onDeleteTimeOffRequest, currentStaffName = '', staffListForTimeOff = [] }: StaffProps) {
   const [activeSubTab, setActiveSubTab] = useState<'directory' | 'time-off'>('directory');
+
+  const [staffToDelete, setStaffToDelete] = useState<number | null>(null);
+
+  const confirmDelete = () => {
+    if (staffToDelete !== null) {
+      onDeleteStaff(staffToDelete);
+      setStaffToDelete(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -90,7 +100,7 @@ export function Staff({ staffList, onToggleStatus, onOpenModal, onEditStaff, onD
                     <button onClick={() => onEditStaff(staff)} className="text-accent hover:text-accent-dark p-1.5 rounded-md border border-border-subtle hover:bg-surface2 touch-manipulation" title="Edit Staff">
                       <Edit className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => { if (window.confirm('Are you sure you want to delete this staff member?')) onDeleteStaff(staff.id); }} className="text-danger hover:text-red-700 p-1.5 rounded-md border border-border-subtle hover:bg-surface2 touch-manipulation" title="Delete Staff">
+                    <button onClick={() => setStaffToDelete(staff.id)} className="text-danger hover:text-red-700 p-1.5 rounded-md border border-border-subtle hover:bg-surface2 touch-manipulation" title="Delete Staff">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -107,6 +117,14 @@ export function Staff({ staffList, onToggleStatus, onOpenModal, onEditStaff, onD
           <TimeOffRequests isStaffView={true} staffName={currentStaffName} timeOffRequests={timeOffRequests} onAddTimeOffRequest={onAddTimeOffRequest} onUpdateTimeOffRequest={onUpdateTimeOffRequest} onDeleteTimeOffRequest={onDeleteTimeOffRequest} embedded={true} staffList={staffListForTimeOff.map(s => ({ id: typeof s.id === 'string' ? parseInt(String(s.id).replace('S-', ''), 10) || s.id : s.id, name: s.name }))} />
         )}
       </div>
+      
+      <DeleteConfirmationModal
+        isOpen={staffToDelete !== null}
+        onClose={() => setStaffToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Staff Member"
+        message="Are you sure you want to delete this staff member? This action cannot be undone."
+      />
     </div>
   );
 }

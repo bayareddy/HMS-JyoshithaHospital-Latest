@@ -92,7 +92,7 @@ export interface Task {
   isActive?: boolean;
 }
 
-export interface ScheduleTemplate {
+export interface Shift {
   id: number;
   name: string;
   opdSlotTime: number;
@@ -102,10 +102,10 @@ export interface ScheduleTemplate {
 
 export interface DaySchedule {
   day: string;
-  tasks: ScheduleTask[];
+  tasks: ShiftTask[];
 }
 
-export interface ScheduleTask {
+export interface ShiftTask {
   id: number;
   taskName: string;
   fromTime: string;
@@ -159,8 +159,8 @@ export interface Staff {
   hospital: string;
   tenant?: number;
   tenantId?: number;
-  scheduleTemplateId?: number;
-  scheduleTemplate?: string;
+  shiftId?: number;
+  shift?: string;
   isActive: boolean;
   availability?: string;
 }

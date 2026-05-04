@@ -25,7 +25,7 @@ export function NewPatientModal({ isOpen, onClose, onSave, states }: ModalProps)
       return;
     }
     
-    const newPt: Patient = {
+    const newPt = {
       name: formData.first,
       age: formData.dob ? new Date(formData.dob).getFullYear() : '',
       gender: formData.gender || '',
@@ -48,7 +48,7 @@ export function NewPatientModal({ isOpen, onClose, onSave, states }: ModalProps)
       stateId: formData.stateId ? Number(formData.stateId) : undefined
     };
     
-    onSave(newPt);
+    onSave(newPt as Patient);
     onClose();
     setFormData({
       first: '', dob: '', gender: '', phone: '', blood: '',

@@ -5,7 +5,7 @@ import { Plus, Trash2 } from 'lucide-react';
 interface ModalProps {
   staff: Staff | null;
   onClose: () => void;
-  onSave: (id: string, assignedShifts: StaffShiftAssignment[], availability: string, opdWindow: string) => void;
+  onSave: (id: number, assignedShifts: StaffShiftAssignment[], availability: string, opdWindow: string) => void;
   availabilities: Availability[];
   shifts: Shift[];
 }

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Badge } from '../components/Badge';
 import { Plus, Calendar, Edit2 } from 'lucide-react';
-import { Department, Staff, ScheduleTemplate } from '../types';
+import { Department, Staff, Shift } from '../types';
 
 interface AppointmentsProps {
   appointments: any[];
   reasons?: { id: number; name: string }[];
   departments?: Department[];
   doctors?: Staff[];
-  scheduleTemplates?: ScheduleTemplate[];
+  shifts?: Shift[];
   onAddAppointment?: (appointment: any) => void;
   onUpdateAppointment?: (appointment: any) => void;
 }
@@ -19,7 +19,7 @@ const REASON_OPTIONS = [
   'Emergency', 'Routine Checkup'
 ];
 
-export function Appointments({ appointments = [], reasons = [], departments = [], doctors = [], scheduleTemplates = [], onAddAppointment, onUpdateAppointment }: AppointmentsProps) {
+export function Appointments({ appointments = [], reasons = [], departments = [], doctors = [], shifts = [], onAddAppointment, onUpdateAppointment }: AppointmentsProps) {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
@@ -42,11 +42,11 @@ export function Appointments({ appointments = [], reasons = [], departments = []
   });
 
   const filteredDoctors = formData.departmentId
-    ? doctors.filter(d => d.departmentId === parseInt(formData.departmentId) || d.department === parseInt(formData.departmentId))
+    ? doctors.filter(d => d.departmentId === parseInt(formData.departmentId) || d.department === formData.departmentId)
     : doctors;
 
   const selectedDoctor = doctors.find(d => d.id === parseInt(formData.doctorId));
-  const scheduleTemplate = scheduleTemplates?.find(st => st.id === selectedDoctor?.scheduleTemplateId);
+  const shift = shifts?.find(st => st.id === selectedDoctor?.shiftId);
 
   const scheduleDates = [];
   const today = new Date();
@@ -60,8 +60,8 @@ export function Appointments({ appointments = [], reasons = [], departments = []
   }
 
   const getAvailableSlots = () => {
-    if (!scheduleTemplate || !selectedScheduleDate) return [];
-    const daySchedule = scheduleTemplate.schedule?.find(s => s.day === new Date(selectedScheduleDate).toLocaleDateString('en-US', { weekday: 'long' }));
+    if (!shift || !selectedScheduleDate) return [];
+    const daySchedule = shift.schedule?.find(s => s.day === new Date(selectedScheduleDate).toLocaleDateString('en-US', { weekday: 'long' }));
     return daySchedule?.tasks || [];
   };
 
