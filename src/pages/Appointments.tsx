@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge } from '../components/Badge';
 import { Plus, Calendar, Edit2 } from 'lucide-react';
-import { Department, Staff, Shift } from '../types';
+import { Department, Staff, Shift, TimeOffRequest } from '../types';
 
 interface AppointmentsProps {
   appointments: any[];
@@ -9,6 +9,7 @@ interface AppointmentsProps {
   departments?: Department[];
   doctors?: Staff[];
   shifts?: Shift[];
+  timeOffRequests?: TimeOffRequest[];
   onAddAppointment?: (appointment: any) => void;
   onUpdateAppointment?: (appointment: any) => void;
 }
@@ -19,7 +20,7 @@ const REASON_OPTIONS = [
   'Emergency', 'Routine Checkup'
 ];
 
-export function Appointments({ appointments = [], reasons = [], departments = [], doctors = [], shifts = [], onAddAppointment, onUpdateAppointment }: AppointmentsProps) {
+export function Appointments({ appointments = [], reasons = [], departments = [], doctors = [], shifts = [], timeOffRequests = [], onAddAppointment, onUpdateAppointment }: AppointmentsProps) {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
@@ -61,8 +62,86 @@ export function Appointments({ appointments = [], reasons = [], departments = []
 
   const getAvailableSlots = () => {
     if (!shift || !selectedScheduleDate) return [];
-    const daySchedule = shift.schedule?.find(s => s.day === new Date(selectedScheduleDate).toLocaleDateString('en-US', { weekday: 'long' }));
-    return daySchedule?.tasks || [];
+    const dayName = new Date(selectedScheduleDate).toLocaleDateString('en-US', { weekday: 'long' });
+    const daySchedule = shift.schedule?.find(s => s.day === dayName);
+    
+    let generatedSlots: string[] = [];
+    const slotDuration = shift.opdSlotTime || 15;
+
+    if (daySchedule && daySchedule.tasks) {
+      daySchedule.tasks.forEach(task => {
+        if (!task.fromTime || !task.toTime) return;
+
+        const [fromHour, fromMin] = task.fromTime.split(':').map(Number);
+        const [toHour, toMin] = task.toTime.split(':').map(Number);
+        
+        let current = fromHour * 60 + fromMin;
+        const end = toHour * 60 + toMin;
+
+        while (current + slotDuration <= end) {
+          const h = Math.floor(current / 60);
+          const m = current % 60;
+          const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+          
+          generatedSlots.push(timeString);
+          current += slotDuration;
+        }
+      });
+    }
+
+    if (generatedSlots.length === 0) return [];
+
+    const doctorIdNum = parseInt(formData.doctorId);
+    const timeOffs = timeOffRequests?.filter(r => r.staffId === doctorIdNum && r.status === 'approved') || [];
+    
+    if (timeOffs.length > 0) {
+       generatedSlots = generatedSlots.filter(slot => {
+         const slotDateTime = new Date(`${selectedScheduleDate}T${slot}:00`);
+         const slotEndDateTime = new Date(slotDateTime.getTime() + slotDuration * 60000);
+         
+         const isOverlap = timeOffs.some(timeOff => {
+            const timeOffStart = new Date(timeOff.startDateTime);
+            const timeOffEnd = new Date(timeOff.endDateTime);
+            return (slotDateTime < timeOffEnd && slotEndDateTime > timeOffStart);
+         });
+         return !isOverlap;
+       });
+    }
+
+    const formatApptTime = (timeStr: string) => {
+      if (!timeStr) return '';
+      const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (match) {
+        let h = parseInt(match[1]);
+        const m = match[2];
+        const ampm = match[3];
+        if (ampm) {
+          if (ampm.toUpperCase() === 'PM' && h < 12) h += 12;
+          if (ampm.toUpperCase() === 'AM' && h === 12) h = 0;
+        }
+        return `${h.toString().padStart(2, '0')}:${m}`;
+      }
+      return timeStr;
+    };
+
+    const bookedAppointments = appointments.filter(apt => 
+      apt.date === selectedScheduleDate && apt.doctor === selectedDoctor?.name
+    ).map(apt => formatApptTime(apt.time));
+    
+    generatedSlots = generatedSlots.filter(slot => {
+       return !bookedAppointments.includes(slot);
+    });
+
+    return generatedSlots.map((time, idx) => ({
+       id: idx,
+       fromTime: time,
+       toTime: (() => {
+         const [h, m] = time.split(':').map(Number);
+         const endMins = h * 60 + m + slotDuration;
+         return `${Math.floor(endMins / 60).toString().padStart(2, '0')}:${(endMins % 60).toString().padStart(2, '0')}`;
+       })(),
+       taskName: 'OPD'
+    }));
   };
 
   const availableSlots = getAvailableSlots();
@@ -232,7 +311,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
                 <label className="block text-[11px] text-gray-500 mb-1">Available Slot *</label>
                 <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={selectedSlot} onChange={e => setSelectedSlot(e.target.value)}>
                   <option value="">Select Slot</option>
-                  {availableSlots.map((slot, idx) => <option key={idx} value={`${slot.fromTime}-${slot.toTime}`}>{slot.fromTime} - {slot.toTime} ({slot.taskName || 'N/A'})</option>)}
+                  {availableSlots.map((slot, idx) => <option key={idx} value={slot.fromTime}>{slot.fromTime} - {slot.toTime} ({slot.taskName || 'N/A'})</option>)}
                 </select>
               </div>
               <div><label className="block text-[11px] text-gray-500 mb-1">Reason</label>

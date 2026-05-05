@@ -827,7 +827,7 @@ export default function App() {
       case 'dashboard': return <Dashboard patients={patients} appointments={appointments} onNavigate={setActiveTab} />;
       case 'patients': return <Patients patients={filteredPatients} onUpdatePatient={handleUpdatePatient} states={states} />;
       case 'beds': return <Beds />;
-      case 'appointments': return <Appointments appointments={appointments} onAddAppointment={handleAddAppointment} onUpdateAppointment={handleUpdateAppointment} reasons={reasons} departments={departments} doctors={staff} shifts={shifts} />;
+      case 'appointments': return <Appointments appointments={appointments} onAddAppointment={handleAddAppointment} onUpdateAppointment={handleUpdateAppointment} reasons={reasons} departments={departments} doctors={staff} shifts={shifts} timeOffRequests={timeOffRequests} />;
       case 'pharmacy': return <Pharmacy />;
       case 'billing': return <Billing />;
       case 'departments': return <Departments departments={departments} onOpenModal={() => setIsDeptModalOpen(true)} />;
