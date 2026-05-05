@@ -4,7 +4,6 @@ import { Topbar } from './components/Topbar';
 import { NewPatientModal } from './components/NewPatientModal';
 import { NewDoctorModal } from './components/NewDoctorModal';
 import { NewDepartmentModal } from './components/NewDepartmentModal';
-import { EditScheduleModal } from './components/EditScheduleModal';
 import { Dashboard } from './pages/Dashboard';
 import { Patients } from './pages/Patients';
 import { Beds } from './pages/Beds';
@@ -13,7 +12,6 @@ import { Pharmacy } from './pages/Pharmacy';
 import { Billing } from './pages/Billing';
 import { Staff } from './pages/Staff';
 import { Departments } from './pages/Departments';
-import { Schedules } from './pages/Schedules';
 import { Reports } from './pages/Reports';
 import { Configuration } from './pages/Configuration';
 import { TimeOffRequests } from './pages/TimeOffRequests';
@@ -45,7 +43,12 @@ export default function App() {
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffType | null>(null);
   const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
-  const [scheduleModalStaff, setScheduleModalStaff] = useState<StaffType | null>(null);
+  const [patientToBook, setPatientToBook] = useState<Patient | null>(null);
+
+  const handleBookAppointment = (patient: Patient) => {
+    setPatientToBook(patient);
+    setActiveTab('appointments');
+  };
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -603,10 +606,6 @@ export default function App() {
     }
   };
 
-  const handleUpdateSchedule = (id: number, assignedShifts: StaffType['assignedShifts'], availability: string, opdWindow: string) => {
-    setStaff(staff.map(s => s.id === id ? { ...s, assignedShifts, availability, opdWindow } : s));
-  };
-
   const handleAddTask = async (newTask: Task) => {
     try {
       const response = await fetch('/api/tasks', {
@@ -825,14 +824,13 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard patients={patients} appointments={appointments} onNavigate={setActiveTab} />;
-      case 'patients': return <Patients patients={filteredPatients} onUpdatePatient={handleUpdatePatient} states={states} />;
+      case 'patients': return <Patients patients={filteredPatients} onUpdatePatient={handleUpdatePatient} states={states} onBookAppointment={handleBookAppointment} />;
       case 'beds': return <Beds />;
-      case 'appointments': return <Appointments appointments={appointments} onAddAppointment={handleAddAppointment} onUpdateAppointment={handleUpdateAppointment} reasons={reasons} departments={departments} doctors={staff} shifts={shifts} timeOffRequests={timeOffRequests} />;
+      case 'appointments': return <Appointments appointments={appointments} onAddAppointment={handleAddAppointment} onUpdateAppointment={handleUpdateAppointment} reasons={reasons} departments={departments} doctors={staff} shifts={shifts} timeOffRequests={timeOffRequests} patientToBook={patientToBook} clearPatientToBook={() => setPatientToBook(null)} />;
       case 'pharmacy': return <Pharmacy />;
       case 'billing': return <Billing />;
       case 'departments': return <Departments departments={departments} onOpenModal={() => setIsDeptModalOpen(true)} />;
       case 'staff': return <Staff staffList={staff} onToggleStatus={handleToggleStaffStatus} onOpenModal={() => { setEditingStaff(null); setIsDoctorModalOpen(true); }} onEditStaff={(s) => { setEditingStaff(s); setIsDoctorModalOpen(true); }} onDeleteStaff={handleDeleteStaff} timeOffRequests={timeOffRequests} onAddTimeOffRequest={handleAddTimeOffRequest} onUpdateTimeOffRequest={handleUpdateTimeOffRequest} onDeleteTimeOffRequest={handleDeleteTimeOffRequest} currentStaffName="Staff Member" staffListForTimeOff={staff.map(s => ({ id: typeof s.id === 'string' ? parseInt(String(s.id).replace('S-', ''), 10) || s.id : s.id, name: s.name }))} />;
-      case 'schedules': return <Schedules staffList={staff} onEditSchedule={setScheduleModalStaff} />;
       case 'time-off': return <TimeOffRequests timeOffRequests={timeOffRequests} onAddTimeOffRequest={handleAddTimeOffRequest} onUpdateTimeOffRequest={handleUpdateTimeOffRequest} onDeleteTimeOffRequest={handleDeleteTimeOffRequest} staffList={staff.map(s => ({ id: typeof s.id === 'string' ? parseInt(String(s.id).replace('S-', ''), 10) || s.id : s.id, name: s.name }))} isStaffView={false} />;
       case 'reports': return <Reports />;
       case 'configuration': return (
@@ -904,13 +902,6 @@ export default function App() {
         isOpen={isDeptModalOpen}
         onClose={() => setIsDeptModalOpen(false)}
         onSave={handleAddDepartment}
-      />
-      <EditScheduleModal
-        staff={scheduleModalStaff}
-        onClose={() => setScheduleModalStaff(null)}
-        onSave={handleUpdateSchedule}
-        availabilities={availabilities}
-        shifts={shifts}
       />
     </div>
   );

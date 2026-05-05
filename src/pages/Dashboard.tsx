@@ -19,7 +19,7 @@ export function Dashboard({ patients, appointments, onNavigate }: DashboardProps
   return (
     <div className="space-y-4">
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-surface border border-border-subtle rounded-xl p-4">
           <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center mb-3 bg-[#E1F5EE] text-[#1D9E75]">
             <Users className="w-[17px] h-[17px]" />
@@ -29,28 +29,12 @@ export function Dashboard({ patients, appointments, onNavigate }: DashboardProps
           <div className="text-[11px] text-gray-500 mt-1">registered patients</div>
         </div>
         <div className="bg-surface border border-border-subtle rounded-xl p-4">
-          <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center mb-3 bg-[#E6F1FB] text-[#378ADD]">
-            <Bed className="w-[17px] h-[17px]" />
-          </div>
-          <div className="text-[11px] text-gray-500 mb-1">Beds Occupied</div>
-          <div className="text-[24px] font-medium leading-none">184 / 240</div>
-          <div className="text-[11px] text-gray-500 mt-1"><span className="text-accent">76.7%</span> occupancy rate</div>
-        </div>
-        <div className="bg-surface border border-border-subtle rounded-xl p-4">
           <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center mb-3 bg-[#FAEEDA] text-[#EF9F27]">
             <Calendar className="w-[17px] h-[17px]" />
           </div>
           <div className="text-[11px] text-gray-500 mb-1">Today's Appointments</div>
           <div className="text-[24px] font-medium leading-none">{appointmentCount}</div>
           <div className="text-[11px] text-gray-500 mt-1">appointments scheduled</div>
-        </div>
-        <div className="bg-surface border border-border-subtle rounded-xl p-4">
-          <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center mb-3 bg-[#FCEBEB] text-[#E24B4A]">
-            <Activity className="w-[17px] h-[17px]" />
-          </div>
-          <div className="text-[11px] text-gray-500 mb-1">Critical Patients</div>
-          <div className="text-[24px] font-medium leading-none">9</div>
-          <div className="text-[11px] text-gray-500 mt-1"><span className="text-danger">+2</span> from yesterday</div>
         </div>
       </div>
 

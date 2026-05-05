@@ -21,6 +21,7 @@ const getAppointments = async (req, res) => {
       const localDate = new Date(appointmentDate.getTime() - appointmentDate.getTimezoneOffset() * 60000);
       return {
         id: row.id,
+        patientId: row.patient_id || null,
         time: row.appointment_time ? appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
         date: row.appointment_time ? localDate.toISOString().split('T')[0] : '',
         patient: row.p_name || row.patient_name || 'Unknown',
@@ -62,6 +63,7 @@ const createAppointment = async (req, res) => {
     const localDate = new Date(appointmentDate.getTime() - appointmentDate.getTimezoneOffset() * 60000);
     res.status(201).json({
       id: row.id,
+      patientId: row.patient_id || null,
       time: row.appointment_time ? appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
       date: row.appointment_time ? localDate.toISOString().split('T')[0] : '',
       patient: row.p_name || row.patient_name || 'Unknown',
@@ -109,6 +111,7 @@ const updateAppointment = async (req, res) => {
     const localDate = new Date(appointmentDate.getTime() - appointmentDate.getTimezoneOffset() * 60000);
     res.json({
       id: row.id,
+      patientId: row.patient_id || null,
       time: row.appointment_time ? appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
       date: row.appointment_time ? localDate.toISOString().split('T')[0] : '',
       patient: row.p_name || row.patient_name || 'Unknown',

@@ -10,6 +10,8 @@ interface AppointmentsProps {
   doctors?: Staff[];
   shifts?: Shift[];
   timeOffRequests?: TimeOffRequest[];
+  patientToBook?: any;
+  clearPatientToBook?: () => void;
   onAddAppointment?: (appointment: any) => void;
   onUpdateAppointment?: (appointment: any) => void;
 }
@@ -20,13 +22,13 @@ const REASON_OPTIONS = [
   'Emergency', 'Routine Checkup'
 ];
 
-export function Appointments({ appointments = [], reasons = [], departments = [], doctors = [], shifts = [], timeOffRequests = [], onAddAppointment, onUpdateAppointment }: AppointmentsProps) {
+export function Appointments({ appointments = [], reasons = [], departments = [], doctors = [], shifts = [], timeOffRequests = [], patientToBook, clearPatientToBook, onAddAppointment, onUpdateAppointment }: AppointmentsProps) {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toLocaleDateString('en-CA'));
   const [formData, setFormData] = useState({
-    patientName: '', doctorId: '', reason: 'Consultation', departmentId: '', time: ''
+    patientName: '', patientId: '', doctorId: '', reason: 'Consultation', departmentId: '', time: ''
   });
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(() => new Date().toLocaleDateString('en-CA'));
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -132,6 +134,26 @@ export function Appointments({ appointments = [], reasons = [], departments = []
        return !bookedAppointments.includes(slot);
     });
 
+    const todayNum = new Date();
+    const istOptions: Intl.DateTimeFormatOptions = { 
+      timeZone: 'Asia/Kolkata', 
+      year: 'numeric', month: '2-digit', day: '2-digit', 
+      hour: '2-digit', minute: '2-digit', hour12: false 
+    };
+    const istParts = new Intl.DateTimeFormat('en-US', istOptions).formatToParts(todayNum);
+    const istMap: Record<string, string> = {};
+    istParts.forEach(({ type, value }) => istMap[type] = value);
+    
+    const istHour = istMap.hour === '24' ? '00' : istMap.hour;
+    const currentIstDate = `${istMap.year}-${istMap.month}-${istMap.day}`;
+    const currentIstTime = `${istHour}:${istMap.minute}`;
+
+    if (selectedScheduleDate === currentIstDate) {
+      generatedSlots = generatedSlots.filter(slot => slot >= currentIstTime);
+    } else if (selectedScheduleDate < currentIstDate) {
+      generatedSlots = [];
+    }
+
     return generatedSlots.map((time, idx) => ({
        id: idx,
        fromTime: time,
@@ -151,6 +173,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
     const dept = departments.find(d => d.name === apt.department);
     setFormData({
       patientName: apt.patient || '',
+      patientId: apt.patientId ? apt.patientId.toString() : '',
       doctorId: doctor?.id?.toString() || '',
       reason: apt.type || apt.reason || 'Consultation',
       departmentId: dept?.id?.toString() || doctor?.departmentId?.toString() || '',
@@ -185,7 +208,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
       if (onUpdateAppointment) {
         const selectedDoctor = doctors.find(d => d.id === parseInt(formData.doctorId));
         const departmentName = selectedDoctor ? (departments.find(dep => dep.id === selectedDoctor.departmentId)?.name || '') : '';
-        onUpdateAppointment({ ...editingAppointment, time: selectedSlot, date: selectedScheduleDate, patient: formData.patientName, doctor: selectedDoctor?.name || '', department: departmentName, type: formData.reason });
+        onUpdateAppointment({ ...editingAppointment, patientId: formData.patientId ? parseInt(formData.patientId) : null, time: selectedSlot, date: selectedScheduleDate, patient: formData.patientName, doctor: selectedDoctor?.name || '', department: departmentName, type: formData.reason });
       }
       setShowModal(false);
       setIsEditing(false);
@@ -199,11 +222,23 @@ export function Appointments({ appointments = [], reasons = [], departments = []
     }
   };
 
+  const ObjectKeys = Object.keys(formData);
+  
+  React.useEffect(() => {
+    if (patientToBook) {
+      setShowModal(true);
+      setIsEditing(false);
+      const patientIdMatch = typeof patientToBook.id === 'string' ? patientToBook.id.replace('P-', '') : patientToBook.id;
+      setFormData(prev => ({ ...prev, patientName: patientToBook.name, patientId: `${patientIdMatch}` }));
+    }
+  }, [patientToBook]);
+
   const handleModalClose = () => {
     setShowModal(false);
+    if (clearPatientToBook) clearPatientToBook();
     setIsEditing(false);
     setEditingAppointment(null);
-    setFormData({ patientName: '', doctorId: '', reason: 'Consultation', departmentId: '', time: '' });
+    setFormData({ patientName: '', patientId: '', doctorId: '', reason: 'Consultation', departmentId: '', time: '' });
     setSelectedScheduleDate(today.toLocaleDateString('en-CA'));
     setSelectedSlot('');
   };
@@ -217,14 +252,14 @@ export function Appointments({ appointments = [], reasons = [], departments = []
       const appointmentDateTime = `${selectedScheduleDate} ${selectedSlot}:00`;
       const response = await fetch('/api/appointments', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appointment_time: appointmentDateTime, patient_id: null, doctor_id: parseInt(formData.doctorId), type: formData.reason, status: 'scheduled', p_name: formData.patientName }),
+        body: JSON.stringify({ appointment_time: appointmentDateTime, patient_id: formData.patientId ? parseInt(formData.patientId) : null, doctor_id: parseInt(formData.doctorId), type: formData.reason, status: 'scheduled', p_name: formData.patientName }),
       });
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Failed to create appointment'); }
       const saved = await response.json();
       if (onAddAppointment) {
         const selectedDoctor = doctors.find(d => d.id === parseInt(formData.doctorId));
         const departmentName = selectedDoctor ? (departments.find(dep => dep.id === selectedDoctor.departmentId)?.name || '') : '';
-        onAddAppointment({ id: saved.id || '', time: selectedSlot, date: saved.date || selectedScheduleDate, patient: formData.patientName, doctor: selectedDoctor?.name || '', department: departmentName, type: formData.reason, status: 'scheduled' });
+        onAddAppointment({ id: saved.id || '', patientId: saved.patientId || null, time: selectedSlot, date: saved.date || selectedScheduleDate, patient: formData.patientName, doctor: selectedDoctor?.name || '', department: departmentName, type: formData.reason, status: 'scheduled' });
       }
       handleModalClose();
     } catch (error) {
@@ -252,6 +287,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
           <thead>
             <tr className="bg-surface2 border-b border-border-subtle">
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Time</th>
+              <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500 min-w-[80px]">Patient ID</th>
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Patient</th>
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Doctor</th>
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Reason</th>
@@ -264,6 +300,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
             {filteredAppointments.map((apt, i) => (
               <tr key={i} className="border-b border-border-subtle last:border-0 hover:bg-[#fafaf9]">
                 <td className={`py-2.5 px-3.5 font-medium ${apt.status === 'scheduled' ? 'text-warning' : 'text-accent'}`}>{apt.time}</td>
+                <td className="py-2.5 px-3.5 text-gray-500">{apt.patientId ? `P-${apt.patientId}` : '-'}</td>
                 <td className="py-2.5 px-3.5">{apt.patient}</td>
                 <td className="py-2.5 px-3.5">{apt.doctor}</td>
                 <td className="py-2.5 px-3.5">{apt.type || apt.reason}</td>
@@ -273,7 +310,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
               </tr>
             ))}
             {filteredAppointments.length === 0 && (
-              <tr><td colSpan={7} className="py-8 text-center text-gray-500 text-[12px]">No appointments for {formatDateDisplay(selectedDate)}.</td></tr>
+              <tr><td colSpan={8} className="py-8 text-center text-gray-500 text-[12px]">No appointments for {formatDateDisplay(selectedDate)}.</td></tr>
             )}
           </tbody>
         </table>
@@ -284,39 +321,42 @@ export function Appointments({ appointments = [], reasons = [], departments = []
           <div className="bg-surface rounded-xl border border-border-subtle w-full max-w-[420px] sm:max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-3 sm:p-4 px-4 sm:px-5 border-b border-border-subtle flex justify-between items-center sticky top-0 bg-surface z-10">
               <span className="text-[14px] sm:text-[15px] font-medium">{isEditing ? 'Edit Appointment' : 'New Appointment'}</span>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none p-1">&times;</button>
+              <button onClick={handleModalClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none p-1">&times;</button>
             </div>
             <div className="p-4 sm:p-5 space-y-3">
               <div><label className="block text-[11px] text-gray-500 mb-1">Patient Name *</label>
-                <input type="text" className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" placeholder="Enter patient name" value={formData.patientName} onChange={e => setFormData({ ...formData, patientName: e.target.value })} />
+                <div className="flex gap-2">
+                  <input type="text" className="w-20 p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" placeholder="ID (opt.)" value={formData.patientId} onChange={e => setFormData({ ...formData, patientId: e.target.value })} />
+                  <input type="text" className="flex-1 p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" placeholder="Enter patient name" value={formData.patientName} onChange={e => setFormData({ ...formData, patientName: e.target.value })} />
+                </div>
               </div>
               <div><label className="block text-[11px] text-gray-500 mb-1">Department</label>
                 <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={formData.departmentId} onChange={e => setFormData({ ...formData, departmentId: e.target.value, doctorId: '' })}>
-                  <option value="">Select Department</option>{departments.map(dept => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
+                  <option value="">Select Department</option>{departments.map((dept, idx) => <option key={dept.id || `dept-${idx}`} value={dept.id}>{dept.name}</option>)}
                 </select>
               </div>
               <div><label className="block text-[11px] text-gray-500 mb-1">Doctor *</label>
                 <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={formData.doctorId} onChange={e => setFormData({ ...formData, doctorId: e.target.value })} disabled={!formData.departmentId}>
                   <option value="">{formData.departmentId ? 'Select Doctor' : 'Select Department first'}</option>
-                  {filteredDoctors.map(doc => <option key={doc.id} value={doc.id}>{doc.name}</option>)}
+                  {filteredDoctors.map((doc, idx) => <option key={doc.id || `doc-${idx}`} value={doc.id}>{doc.name}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-[11px] text-gray-500 mb-1">Schedule Date (Current + 2 days)</label>
                 <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={selectedScheduleDate} onChange={e => setSelectedScheduleDate(e.target.value)}>
-                  {scheduleDates.map(sd => <option key={sd.date} value={sd.date}>{sd.date} ({sd.day})</option>)}
+                  {scheduleDates.map((sd, idx) => <option key={`${sd.date}-${idx}`} value={sd.date}>{sd.date} ({sd.day})</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-[11px] text-gray-500 mb-1">Available Slot *</label>
                 <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={selectedSlot} onChange={e => setSelectedSlot(e.target.value)}>
                   <option value="">Select Slot</option>
-                  {availableSlots.map((slot, idx) => <option key={idx} value={slot.fromTime}>{slot.fromTime} - {slot.toTime} ({slot.taskName || 'N/A'})</option>)}
+                  {availableSlots.map((slot, idx) => <option key={`slot-${slot.fromTime}-${idx}`} value={slot.fromTime}>{slot.fromTime} - {slot.toTime} ({slot.taskName || 'N/A'})</option>)}
                 </select>
               </div>
               <div><label className="block text-[11px] text-gray-500 mb-1">Reason</label>
                 <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={formData.reason} onChange={e => setFormData({ ...formData, reason: e.target.value })}>
-                  {(reasons && reasons.length > 0 ? reasons : REASON_OPTIONS).map(opt => <option key={opt.id || opt} value={opt.name || opt}>{opt.name || opt}</option>)}
+                  {(reasons && reasons.length > 0 ? reasons : REASON_OPTIONS).map((opt, idx) => <option key={opt.id ? `reason-${opt.id}` : (opt.name ? `reason-${opt.name}-${idx}` : `reason-opt-${idx}`)} value={opt.name || opt}>{opt.name || opt}</option>)}
                 </select>
               </div>
             </div>

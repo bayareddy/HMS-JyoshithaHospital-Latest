@@ -69,6 +69,7 @@ export function Staff({ staffList, onToggleStatus, onOpenModal, onEditStaff, onD
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 hide-mobile">Role</th>
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 hide-mobile">Department</th>
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 hide-mobile">Hospital</th>
+              <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 hide-mobile">Shift</th>
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500">Status</th>
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500">Actions</th>
             </tr>
@@ -82,6 +83,7 @@ export function Staff({ staffList, onToggleStatus, onOpenModal, onEditStaff, onD
                 <td className="py-2.5 px-3 sm:px-3.5 hide-mobile">{staff.role}</td>
                 <td className="py-2.5 px-3 sm:px-3.5 hide-mobile">{staff.department}</td>
                 <td className="py-2.5 px-3 sm:px-3.5 hide-mobile">{staff.hospital}</td>
+                <td className="py-2.5 px-3 sm:px-3.5 hide-mobile">{staff.shift || 'N/A'}</td>
                 <td className="py-2.5 px-3 sm:px-3.5">
                   <Badge status={staff.isActive ? 'admitted' : 'critical'}>
                     {staff.isActive ? 'Active' : 'Disabled'}</Badge>

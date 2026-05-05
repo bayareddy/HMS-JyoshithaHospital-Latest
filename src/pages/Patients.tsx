@@ -7,10 +7,12 @@ interface PatientsProps {
   patients: Patient[];
   onUpdatePatient: (patient: Patient) => void;
   states: { id: number; name: string }[];
+  onBookAppointment: (patient: Patient) => void;
 }
 
-export function Patients({ patients, onUpdatePatient, states }: PatientsProps) {
+export function Patients({ patients, onUpdatePatient, states, onBookAppointment }: PatientsProps) {
   const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [editForm, setEditForm] = useState({
     name: '', age: '', gender: '', diagnosis: '', blood: '',
@@ -19,9 +21,17 @@ export function Patients({ patients, onUpdatePatient, states }: PatientsProps) {
     whatsappNo: '', emailId: '', address: '', pinCode: '', city: '', stateId: ''
   });
 
-  const filteredPatients = filter === 'all' 
-    ? patients 
-    : patients.filter(p => p.status === filter);
+  const filteredPatients = patients.filter(p => {
+    if (filter !== 'all' && p.status !== filter) return false;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const phone = (p as any).phoneNo?.toLowerCase() || '';
+      const email = (p as any).emailId?.toLowerCase() || '';
+      const name = p.name.toLowerCase();
+      if (!name.includes(term) && !phone.includes(term) && !email.includes(term)) return false;
+    }
+    return true;
+  });
 
   const filters = [
     { id: 'all', label: 'All' },
@@ -83,22 +93,33 @@ export function Patients({ patients, onUpdatePatient, states }: PatientsProps) {
   return (
     <div className="bg-surface border border-border-subtle rounded-xl overflow-hidden">
       {/* Horizontal scrollable filter bar */}
-      <div className="flex gap-1.5 sm:gap-2 p-2 sm:p-2.5 px-3 sm:px-4 border-b border-border-subtle items-center overflow-x-auto">
-        <span className="text-[11px] text-gray-500 shrink-0">Filter:</span>
-        <div className="flex gap-1.5 sm:gap-2">
-          {filters.map(f => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              className={`px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] border transition-colors whitespace-nowrap touch-manipulation ${
-                filter === f.id 
-                  ? 'bg-accent-light text-accent-dark border-accent' 
-                  : 'bg-surface text-gray-500 border-border-subtle hover:bg-surface2'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+      <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 p-2 sm:p-2.5 px-3 sm:px-4 border-b border-border-subtle items-start sm:items-center justify-between">
+        <div className="flex gap-1.5 sm:gap-2 items-center overflow-x-auto w-full sm:w-auto">
+          <span className="text-[11px] text-gray-500 shrink-0">Filter:</span>
+          <div className="flex gap-1.5 sm:gap-2">
+            {filters.map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] border transition-colors whitespace-nowrap touch-manipulation ${
+                  filter === f.id 
+                    ? 'bg-accent-light text-accent-dark border-accent' 
+                    : 'bg-surface text-gray-500 border-border-subtle hover:bg-surface2'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="w-full sm:w-64 shrink-0">
+          <input
+            type="text"
+            placeholder="Search by Name, Phone, Email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-1.5 text-[12px] border border-border-subtle rounded-md focus:border-accent outline-none bg-surface"
+          />
         </div>
       </div>
       
@@ -109,12 +130,10 @@ export function Patients({ patients, onUpdatePatient, states }: PatientsProps) {
             <tr className="bg-surface2 border-b border-border-subtle">
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500">Patient</th>
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500">Age / Gender</th>
-              <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 hide-mobile">Doctor</th>
-              <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 hide-mobile">Diagnosis</th>
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 hide-mobile">Blood</th>
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500">Status</th>
               <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 hide-mobile">Admitted</th>
-              <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 w-[60px]">Actions</th>
+              <th className="py-2.5 px-3 sm:px-3.5 font-medium text-[11px] text-gray-500 w-[140px]">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -129,14 +148,18 @@ export function Patients({ patients, onUpdatePatient, states }: PatientsProps) {
                   {(p as any).address && <div className="text-[10px] text-gray-400">📍 {(p as any).address}, {(p as any).city} {(p as any).pinCode}</div>}
                 </td>
                 <td className="py-2.5 px-3 sm:px-3.5">{p.age} / {p.gender}</td>
-                <td className="py-2.5 px-3 sm:px-3.5 hide-mobile">{p.doctor}</td>
-                <td className="py-2.5 px-3 sm:px-3.5 hide-mobile">{p.diagnosis}</td>
                 <td className="py-2.5 px-3 sm:px-3.5 hide-mobile">{p.blood}</td>
                 <td className="py-2.5 px-3 sm:px-3.5">
                   <Badge status={p.status}>{p.status.charAt(0).toUpperCase() + p.status.slice(1)}</Badge>
                 </td>
                 <td className="py-2.5 px-3 sm:px-3.5 hide-mobile">{p.date}</td>
-                <td className="py-2.5 px-3 sm:px-3.5">
+                <td className="py-2.5 px-3 sm:px-3.5 flex items-center gap-2">
+                  <button 
+                    onClick={() => onBookAppointment(p)}
+                    className="text-white bg-accent hover:bg-accent-dark px-2 py-1 rounded text-[10px] font-medium transition-colors"
+                  >
+                    Book Appt
+                  </button>
                   <button 
                     onClick={() => setEditingPatient(p)}
                     className="text-accent hover:text-accent-dark p-1"
@@ -149,7 +172,7 @@ export function Patients({ patients, onUpdatePatient, states }: PatientsProps) {
             ))}
             {filteredPatients.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-8 text-center text-gray-500 text-[12px]">
+                <td colSpan={6} className="py-8 text-center text-gray-500 text-[12px]">
                   No patients found matching the selected filter.
                 </td>
               </tr>

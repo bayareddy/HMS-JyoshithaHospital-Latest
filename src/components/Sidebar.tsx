@@ -22,7 +22,6 @@ export function Sidebar({ activeTab, setActiveTab, isMobileOpen, onCloseMobile }
     { id: 'billing', label: 'Billing', icon: Receipt, section: 'Operations' },
     { id: 'departments', label: 'Departments', icon: Building2, section: 'Operations' },
     { id: 'staff', label: 'Staff Directory', icon: Contact, section: 'Staff' },
-    { id: 'schedules', label: 'Schedules', icon: Clock, section: 'Staff' },
     { id: 'reports', label: 'Reports', icon: FileText, section: 'Staff' },
     { id: 'configuration', label: 'Configuration', icon: Settings, section: 'System' },
   ];
