@@ -15,7 +15,7 @@ export function Patients({ patients, onUpdatePatient, states, onBookAppointment 
   const [searchTerm, setSearchTerm] = useState('');
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [editForm, setEditForm] = useState({
-    name: '', age: '', gender: '', diagnosis: '', blood: '',
+    name: '', age: '', dob: '', gender: '', diagnosis: '', blood: '',
     phoneNo: '', emergencyContact: '', allergies: '',
     relationshipType: '', relationship: '',
     whatsappNo: '', emailId: '', address: '', pinCode: '', city: '', stateId: ''
@@ -46,6 +46,7 @@ export function Patients({ patients, onUpdatePatient, states, onBookAppointment 
       setEditForm({
         name: editingPatient.name || '',
         age: editingPatient.age !== undefined && editingPatient.age !== '—' && editingPatient.age !== '' ? String(editingPatient.age) : '',
+        dob: (editingPatient as any).dob || '',
         gender: editingPatient.gender || '',
         diagnosis: editingPatient.diagnosis || '',
         blood: editingPatient.blood || '',
@@ -70,7 +71,8 @@ export function Patients({ patients, onUpdatePatient, states, onBookAppointment 
     const updatedPatient: Patient = {
       ...editingPatient,
       name: editForm.name,
-      age: editForm.age ? parseInt(editForm.age) : '',
+      age: editForm.dob ? new Date().getFullYear() - new Date(editForm.dob).getFullYear() : (editForm.age ? parseInt(editForm.age) : ''),
+      ...(editForm.dob ? { dob: editForm.dob } : {}),
       gender: editForm.gender,
       diagnosis: editForm.diagnosis,
       blood: editForm.blood,
@@ -198,6 +200,22 @@ export function Patients({ patients, onUpdatePatient, states, onBookAppointment 
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div>
+                  <label className="block text-[11px] text-gray-500 mb-1">Relationship</label>
+                  <div className="flex gap-1">
+                    <select className="w-16 p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={editForm.relationshipType} onChange={e => setEditForm({...editForm, relationshipType: e.target.value})}>
+                      <option value="W/O">W/O</option><option value="S/O">S/O</option><option value="D/O">D/O</option><option value="C/O">C/O</option>
+                    </select>
+                    <input className="flex-1 p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" placeholder="Guardian name" value={editForm.relationship} onChange={e => setEditForm({...editForm, relationship: e.target.value})} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-500 mb-1">Date of birth</label>
+                  <input type="date" className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={editForm.dob} onChange={e => setEditForm({...editForm, dob: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div>
                   <label className="block text-[11px] text-gray-500 mb-1">Age</label>
                   <input className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={editForm.age} onChange={e => setEditForm({...editForm, age: e.target.value})} />
                 </div>
@@ -255,16 +273,6 @@ export function Patients({ patients, onUpdatePatient, states, onBookAppointment 
                       <option key={s.id} value={s.id.toString()}>{s.name}</option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] text-gray-500 mb-1">Relationship</label>
-                <div className="flex gap-1">
-                  <select className="w-16 p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={editForm.relationshipType} onChange={e => setEditForm({...editForm, relationshipType: e.target.value})}>
-                    <option value="W/O">W/O</option><option value="S/O">S/O</option><option value="D/O">D/O</option><option value="C/O">C/O</option>
-                  </select>
-                  <input className="flex-1 p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" placeholder="Guardian name" value={editForm.relationship} onChange={e => setEditForm({...editForm, relationship: e.target.value})} />
                 </div>
               </div>
 

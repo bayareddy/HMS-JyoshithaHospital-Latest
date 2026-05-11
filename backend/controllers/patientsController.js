@@ -8,6 +8,7 @@ const getPatients = async (req, res) => {
         p.id,
         p.frist_name as name,
         p.age,
+        p.dob,
         p.gender,
         p.diagnosis,
         p.blood_group as blood,
@@ -33,6 +34,7 @@ const getPatients = async (req, res) => {
       id: `P-${row.id}`,
       name: row.name,
       age: row.age,
+      dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : '',
       gender: row.gender || '',
       ward: '',
       doctor: '',
@@ -61,7 +63,7 @@ const getPatients = async (req, res) => {
 // Create a new patient
 const createPatient = async (req, res) => {
   const { 
-    name, age, gender, diagnosis, blood, status,
+    name, age, dob, gender, diagnosis, blood, status,
     phoneNo, emergencyContact, allergies, relationshipType, relationship,
     whatsappNo, emailId, address, pinCode, city, stateId
   } = req.body;
@@ -77,13 +79,14 @@ const createPatient = async (req, res) => {
     
     const [result] = await db.query(
       `INSERT INTO patients (
-        frist_name, age, gender, diagnosis, blood_group, status, admission_date,
+        frist_name, age, dob, gender, diagnosis, blood_group, status, admission_date,
         phone_no, emergency_contact, allergies, relationship_type, relationship,
         whatsapp_no, email_id, address, pin_code, city, state_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
         ageNum,
+        dob || null,
         gender || null,
         diagnosis || null,
         blood || null,
@@ -107,6 +110,7 @@ const createPatient = async (req, res) => {
       id: `P-${patientId}`, 
       name, 
       age: ageNum, 
+      dob: dob || '',
       gender: gender || '', 
       ward: '', 
       doctor: '', 
@@ -140,7 +144,7 @@ const updatePatient = async (req, res) => {
   }
   
   const { 
-    name, age, gender, diagnosis, blood, status,
+    name, age, dob, gender, diagnosis, blood, status,
     phoneNo, emergencyContact, allergies, relationshipType, relationship,
     whatsappNo, emailId, address, pinCode, city, stateId
   } = req.body;
@@ -157,13 +161,14 @@ const updatePatient = async (req, res) => {
     
     const [result] = await db.query(
       `UPDATE patients SET 
-        frist_name = ?, age = ?, gender = ?, diagnosis = ?, blood_group = ?, status = ?,
+        frist_name = ?, age = ?, dob = ?, gender = ?, diagnosis = ?, blood_group = ?, status = ?,
         phone_no = ?, emergency_contact = ?, allergies = ?, relationship_type = ?, relationship = ?,
         whatsapp_no = ?, email_id = ?, address = ?, pin_code = ?, city = ?, state_id = ?
        WHERE id = ?`,
       [
         name,
         ageNum,
+        dob || null,
         gender || null,
         diagnosis || null,
         blood || null,
@@ -193,6 +198,7 @@ const updatePatient = async (req, res) => {
         p.id,
         p.frist_name as name,
         p.age,
+        p.dob,
         p.gender,
         p.diagnosis,
         p.blood_group as blood,
@@ -218,6 +224,7 @@ const updatePatient = async (req, res) => {
       id: `P-${row.id}`,
       name: row.name,
       age: row.age,
+      dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : '',
       gender: row.gender || '',
       ward: '',
       doctor: '',
