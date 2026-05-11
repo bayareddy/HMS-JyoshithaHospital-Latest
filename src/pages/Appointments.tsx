@@ -26,7 +26,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+  const [selectedDate, setSelectedDate] = useState('');
   const [formData, setFormData] = useState({
     patientName: '', patientId: '', doctorId: '', reason: 'Consultation', departmentId: '', time: ''
   });
@@ -40,6 +40,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
   };
 
   const filteredAppointments = appointments.filter(apt => {
+    if (!selectedDate) return true;
     if (!apt.date) return true;
     return apt.date === selectedDate;
   });
@@ -273,7 +274,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
       <div className="p-3 px-4 border-b border-border-subtle flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-500" />
-          <span className="text-[13px] font-medium">Appointments — {formatDateDisplay(selectedDate)}</span>
+          <span className="text-[13px] font-medium">Appointments {selectedDate ? `— ${formatDateDisplay(selectedDate)}` : '— All Dates'}</span>
         </div>
         <div className="flex items-center gap-2">
           <input type="date" className="p-1.5 border border-border-subtle rounded-md text-[11px] bg-surface2 focus:border-accent outline-none" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
@@ -310,7 +311,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
               </tr>
             ))}
             {filteredAppointments.length === 0 && (
-              <tr><td colSpan={8} className="py-8 text-center text-gray-500 text-[12px]">No appointments for {formatDateDisplay(selectedDate)}.</td></tr>
+              <tr><td colSpan={8} className="py-8 text-center text-gray-500 text-[12px]">No appointments {selectedDate ? `for ${formatDateDisplay(selectedDate)}` : 'found'}.</td></tr>
             )}
           </tbody>
         </table>

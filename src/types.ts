@@ -2,6 +2,7 @@ export interface Patient {
   id: string;
   name: string;
   age: number | string;
+  dob?: string;
   gender: string;
   ward: string;
   doctor: string;

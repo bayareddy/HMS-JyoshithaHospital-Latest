@@ -50,7 +50,6 @@ export function Dashboard({ patients, appointments, onNavigate }: DashboardProps
               <thead>
                 <tr className="bg-surface2 border-b border-border-subtle">
                   <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Patient</th>
-                  <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Ward</th>
                   <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Doctor</th>
                   <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Status</th>
                   <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Date</th>
@@ -63,7 +62,6 @@ export function Dashboard({ patients, appointments, onNavigate }: DashboardProps
                       <div className="font-medium">{p.name}</div>
                       <div className="text-[10px] text-gray-500">#{p.id}</div>
                     </td>
-                    <td className="py-2.5 px-3.5">{p.ward}</td>
                     <td className="py-2.5 px-3.5">{p.doctor}</td>
                     <td className="py-2.5 px-3.5"><Badge status={p.status}>{p.status.charAt(0).toUpperCase() + p.status.slice(1)}</Badge></td>
                     <td className="py-2.5 px-3.5">{p.date}</td>

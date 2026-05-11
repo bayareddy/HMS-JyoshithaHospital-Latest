@@ -27,7 +27,8 @@ export function NewPatientModal({ isOpen, onClose, onSave, states }: ModalProps)
     
     const newPt = {
       name: formData.first,
-      age: formData.dob ? new Date(formData.dob).getFullYear() : '',
+      age: formData.dob ? new Date().getFullYear() - new Date(formData.dob).getFullYear() : '',
+      dob: formData.dob || undefined,
       gender: formData.gender || '',
       ward: '',
       doctor: '',
