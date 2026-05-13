@@ -40,6 +40,30 @@ const getStaff = async (req, res) => {
   }
 };
 
+// Get all active doctors
+const getActiveDoctors = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        s.id, s.name, s.role_id, s.department_id, s.phone, s.status, 
+        s.opd_window, s.tenant_id, s.shift_id, s.is_active,
+        r.name as role_name,
+        d.name as department_name,
+        t.name as tenant_name,
+        st.name as shift_name
+      FROM staff s
+      LEFT JOIN roles r ON s.role_id = r.id
+      LEFT JOIN departments d ON s.department_id = d.id
+      LEFT JOIN tenants t ON s.tenant_id = t.id
+      LEFT JOIN shifts st ON s.shift_id = st.id
+      WHERE s.is_active = 1 AND r.name = 'Doctor'
+    `);
+    res.json(rows.map(mapRowToStaff));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Create a new staff member
 const createStaff = async (req, res) => {
   const { name, roleId, departmentId, phone, status, opdWindow, tenantId, shiftId, isActive } = req.body;
@@ -108,4 +132,4 @@ const deleteStaff = async (req, res) => {
   }
 };
 
-module.exports = { getStaff, createStaff, updateStaff, deleteStaff };
+module.exports = { getStaff, getActiveDoctors, createStaff, updateStaff, deleteStaff };

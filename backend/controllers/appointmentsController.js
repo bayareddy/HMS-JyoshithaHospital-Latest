@@ -7,6 +7,7 @@ const getAppointments = async (req, res) => {
       SELECT 
         a.*,
         p.frist_name as patient_name,
+        p.phone_no as patient_phone,
         s.name as doctor_name,
         s.department_id as doctor_department_id,
         d.name as department_name
@@ -25,6 +26,7 @@ const getAppointments = async (req, res) => {
         time: row.appointment_time ? appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
         date: row.appointment_time ? localDate.toISOString().split('T')[0] : '',
         patient: row.p_name || row.patient_name || 'Unknown',
+        phoneNo: row.phone_no || row.patient_phone || '',
         doctor: row.doctor_name || 'Unknown',
         type: row.type || '',
         reason: row.type || '',
@@ -40,17 +42,18 @@ const getAppointments = async (req, res) => {
 
 // Create a new appointment
 const createAppointment = async (req, res) => {
-  const { appointment_time, doctor_id, type, status, p_name, patient_id } = req.body;
+  const { appointment_time, doctor_id, type, status, p_name, patient_id, phone_no } = req.body;
   try {
     const [result] = await db.query(
-      'INSERT INTO appointments (appointment_time, patient_id, doctor_id, type, status, p_name) VALUES (?, ?, ?, ?, ?, ?)',
-      [appointment_time, patient_id, doctor_id, type, status || 'scheduled', p_name || null]
+      'INSERT INTO appointments (appointment_time, patient_id, doctor_id, type, status, p_name, phone_no) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [appointment_time, patient_id, doctor_id, type, status || 'scheduled', p_name || null, phone_no || null]
     );
     // Fetch the created appointment
     const [rows] = await db.query(`
       SELECT 
         a.*,
         p.frist_name as patient_name,
+        p.phone_no as patient_phone,
         s.name as doctor_name
       FROM appointments a
       LEFT JOIN patients p ON a.patient_id = p.id
@@ -67,6 +70,7 @@ const createAppointment = async (req, res) => {
       time: row.appointment_time ? appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
       date: row.appointment_time ? localDate.toISOString().split('T')[0] : '',
       patient: row.p_name || row.patient_name || 'Unknown',
+      phoneNo: row.phone_no || row.patient_phone || '',
       doctor: row.doctor_name || 'Unknown',
       type: row.type || '',
       department: '',
@@ -81,17 +85,18 @@ const createAppointment = async (req, res) => {
 // Update an appointment
 const updateAppointment = async (req, res) => {
   const { id } = req.params;
-  const { appointment_time, doctor_id, type, p_name } = req.body;
+  const { appointment_time, doctor_id, type, p_name, phone_no } = req.body;
   try {
     await db.query(
-      'UPDATE appointments SET appointment_time = ?, doctor_id = ?, type = ?, p_name = ? WHERE id = ?',
-      [appointment_time, doctor_id, type, p_name, id]
+      'UPDATE appointments SET appointment_time = ?, doctor_id = ?, type = ?, p_name = ?, phone_no = ? WHERE id = ?',
+      [appointment_time, doctor_id, type, p_name, phone_no || null, id]
     );
     // Fetch the updated appointment
     const [rows] = await db.query(`
       SELECT 
         a.*,
         p.frist_name as patient_name,
+        p.phone_no as patient_phone,
         s.name as doctor_name,
         s.department_id as doctor_department_id,
         d.name as department_name
@@ -115,6 +120,7 @@ const updateAppointment = async (req, res) => {
       time: row.appointment_time ? appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
       date: row.appointment_time ? localDate.toISOString().split('T')[0] : '',
       patient: row.p_name || row.patient_name || 'Unknown',
+      phoneNo: row.phone_no || row.patient_phone || '',
       doctor: row.doctor_name || 'Unknown',
       type: row.type || '',
       department: row.department_name || '',
