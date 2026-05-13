@@ -28,7 +28,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [formData, setFormData] = useState({
-    patientName: '', patientId: '', doctorId: '', reason: 'Consultation', departmentId: '', time: ''
+    patientName: '', patientId: '', doctorId: '', reason: 'Consultation', departmentId: '', time: '', phoneNo: ''
   });
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(() => new Date().toLocaleDateString('en-CA'));
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -175,6 +175,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
     setFormData({
       patientName: apt.patient || '',
       patientId: apt.patientId ? apt.patientId.toString() : '',
+      phoneNo: apt.phoneNo || '',
       doctorId: doctor?.id?.toString() || '',
       reason: apt.type || apt.reason || 'Consultation',
       departmentId: dept?.id?.toString() || doctor?.departmentId?.toString() || '',
@@ -199,7 +200,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
       const appointmentDateTime = `${selectedScheduleDate} ${selectedSlot}:00`;
       const response = await fetch(`/api/appointments/${editingAppointment.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appointment_time: appointmentDateTime, doctor_id: parseInt(formData.doctorId), type: formData.reason, p_name: formData.patientName }),
+        body: JSON.stringify({ appointment_time: appointmentDateTime, doctor_id: parseInt(formData.doctorId), type: formData.reason, p_name: formData.patientName, phone_no: formData.phoneNo }),
       });
       if (!response.ok) {
         const err = await response.json();
@@ -209,12 +210,12 @@ export function Appointments({ appointments = [], reasons = [], departments = []
       if (onUpdateAppointment) {
         const selectedDoctor = doctors.find(d => d.id === parseInt(formData.doctorId));
         const departmentName = selectedDoctor ? (departments.find(dep => dep.id === selectedDoctor.departmentId)?.name || '') : '';
-        onUpdateAppointment({ ...editingAppointment, patientId: formData.patientId ? parseInt(formData.patientId) : null, time: selectedSlot, date: selectedScheduleDate, patient: formData.patientName, doctor: selectedDoctor?.name || '', department: departmentName, type: formData.reason });
+        onUpdateAppointment({ ...editingAppointment, patientId: formData.patientId ? parseInt(formData.patientId) : null, time: selectedSlot, date: selectedScheduleDate, patient: formData.patientName, phoneNo: formData.phoneNo, doctor: selectedDoctor?.name || '', department: departmentName, type: formData.reason });
       }
       setShowModal(false);
       setIsEditing(false);
       setEditingAppointment(null);
-      setFormData({ patientName: '', doctorId: '', reason: 'Consultation', departmentId: '', time: '' });
+      setFormData({ patientName: '', doctorId: '', reason: 'Consultation', departmentId: '', time: '', phoneNo: '' });
       setSelectedScheduleDate(today.toLocaleDateString('en-CA'));
       setSelectedSlot('');
     } catch (error) {
@@ -239,7 +240,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
     if (clearPatientToBook) clearPatientToBook();
     setIsEditing(false);
     setEditingAppointment(null);
-    setFormData({ patientName: '', patientId: '', doctorId: '', reason: 'Consultation', departmentId: '', time: '' });
+    setFormData({ patientName: '', patientId: '', doctorId: '', reason: 'Consultation', departmentId: '', time: '', phoneNo: '' });
     setSelectedScheduleDate(today.toLocaleDateString('en-CA'));
     setSelectedSlot('');
   };
@@ -253,14 +254,14 @@ export function Appointments({ appointments = [], reasons = [], departments = []
       const appointmentDateTime = `${selectedScheduleDate} ${selectedSlot}:00`;
       const response = await fetch('/api/appointments', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appointment_time: appointmentDateTime, patient_id: formData.patientId ? parseInt(formData.patientId) : null, doctor_id: parseInt(formData.doctorId), type: formData.reason, status: 'scheduled', p_name: formData.patientName }),
+        body: JSON.stringify({ appointment_time: appointmentDateTime, patient_id: formData.patientId ? parseInt(formData.patientId) : null, doctor_id: parseInt(formData.doctorId), type: formData.reason, status: 'scheduled', p_name: formData.patientName, phone_no: formData.phoneNo }),
       });
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Failed to create appointment'); }
       const saved = await response.json();
       if (onAddAppointment) {
         const selectedDoctor = doctors.find(d => d.id === parseInt(formData.doctorId));
         const departmentName = selectedDoctor ? (departments.find(dep => dep.id === selectedDoctor.departmentId)?.name || '') : '';
-        onAddAppointment({ id: saved.id || '', patientId: saved.patientId || null, time: selectedSlot, date: saved.date || selectedScheduleDate, patient: formData.patientName, doctor: selectedDoctor?.name || '', department: departmentName, type: formData.reason, status: 'scheduled' });
+        onAddAppointment({ id: saved.id || '', patientId: saved.patientId || null, time: selectedSlot, date: saved.date || selectedScheduleDate, patient: formData.patientName, phoneNo: formData.phoneNo, doctor: selectedDoctor?.name || '', department: departmentName, type: formData.reason, status: 'scheduled' });
       }
       handleModalClose();
     } catch (error) {
@@ -330,6 +331,9 @@ export function Appointments({ appointments = [], reasons = [], departments = []
                   <input type="text" className="w-20 p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" placeholder="ID (opt.)" value={formData.patientId} onChange={e => setFormData({ ...formData, patientId: e.target.value })} />
                   <input type="text" className="flex-1 p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" placeholder="Enter patient name" value={formData.patientName} onChange={e => setFormData({ ...formData, patientName: e.target.value })} />
                 </div>
+              </div>
+              <div><label className="block text-[11px] text-gray-500 mb-1">Phone Number (opt.)</label>
+                <input type="text" className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" placeholder="Enter phone number" value={formData.phoneNo} onChange={e => setFormData({ ...formData, phoneNo: e.target.value })} />
               </div>
               <div><label className="block text-[11px] text-gray-500 mb-1">Department</label>
                 <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={formData.departmentId} onChange={e => setFormData({ ...formData, departmentId: e.target.value, doctorId: '' })}>
