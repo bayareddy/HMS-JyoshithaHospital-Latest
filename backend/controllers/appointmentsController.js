@@ -239,7 +239,30 @@ const getSlots = async (req, res) => {
     // Sort by time
     uniqueSlots.sort((a, b) => a.time.localeCompare(b.time));
 
-    res.json({ slots: uniqueSlots });
+    // 4. Filter past slots for the current date in IST
+    const todayNum = new Date();
+    const istOptions = { 
+      timeZone: 'Asia/Kolkata', 
+      year: 'numeric', month: '2-digit', day: '2-digit', 
+      hour: '2-digit', minute: '2-digit', hour12: false 
+    };
+    const istParts = new Intl.DateTimeFormat('en-US', istOptions).formatToParts(todayNum);
+    const istMap = {};
+    istParts.forEach(({ type, value }) => istMap[type] = value);
+    
+    // JS dates can give hour 24 for midnight, formatting to 00
+    const istHour = istMap.hour === '24' ? '00' : istMap.hour;
+    const currentIstDate = `${istMap.year}-${istMap.month}-${istMap.day}`;
+    const currentIstTime = `${istHour}:${istMap.minute}`;
+
+    let validSlots = uniqueSlots;
+    if (date === currentIstDate) {
+      validSlots = uniqueSlots.filter(slot => slot.time >= currentIstTime);
+    } else if (date < currentIstDate) {
+      validSlots = [];
+    }
+
+    res.json({ slots: validSlots });
   } catch (error) {
     console.error('Error fetching slots:', error);
     res.status(500).json({ error: error.message });
