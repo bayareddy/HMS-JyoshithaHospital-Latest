@@ -32,6 +32,39 @@ export function Appointments({ appointments = [], reasons = [], departments = []
   });
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(() => new Date().toLocaleDateString('en-CA'));
   const [selectedSlot, setSelectedSlot] = useState('');
+  const [availableSlots, setAvailableSlots] = useState<{fromTime: string, toTime: string, taskName: string}[]>([]);
+
+  React.useEffect(() => {
+    if (!formData.doctorId || !selectedScheduleDate) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    const fetchSlots = async () => {
+      try {
+        const res = await fetch(`/api/appointments/slots?doctorId=${formData.doctorId}&date=${selectedScheduleDate}`);
+        if (!res.ok) throw new Error('Failed to fetch slots');
+        const data = await res.json();
+        if (data.slots) {
+          // Map to standard component structure
+          const slots = data.slots.filter((s:any) => s.isAvailable).map((s: any) => ({
+            fromTime: s.time,
+            toTime: s.time,
+            displayTime: s.displayTime,
+            taskName: 'OPD'
+          }));
+          setAvailableSlots(slots);
+        } else {
+          setAvailableSlots([]);
+        }
+      } catch (error) {
+        console.error('Error fetching slots:', error);
+        setAvailableSlots([]);
+      }
+    };
+
+    fetchSlots();
+  }, [formData.doctorId, selectedScheduleDate]);
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -63,54 +96,10 @@ export function Appointments({ appointments = [], reasons = [], departments = []
     });
   }
 
-  const getAvailableSlots = () => {
-    if (!shift || !selectedScheduleDate) return [];
-    const dayName = new Date(selectedScheduleDate).toLocaleDateString('en-US', { weekday: 'long' });
-    const daySchedule = shift.schedule?.find(s => s.day === dayName);
+  const openEditModal = (apt: any) => {
+    const doctor = doctors.find(d => d.name === apt.doctor);
+    const dept = departments.find(d => d.name === apt.department);
     
-    let generatedSlots: string[] = [];
-    const slotDuration = shift.opdSlotTime || 15;
-
-    if (daySchedule && daySchedule.tasks) {
-      daySchedule.tasks.forEach(task => {
-        if (!task.fromTime || !task.toTime) return;
-
-        const [fromHour, fromMin] = task.fromTime.split(':').map(Number);
-        const [toHour, toMin] = task.toTime.split(':').map(Number);
-        
-        let current = fromHour * 60 + fromMin;
-        const end = toHour * 60 + toMin;
-
-        while (current + slotDuration <= end) {
-          const h = Math.floor(current / 60);
-          const m = current % 60;
-          const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-          
-          generatedSlots.push(timeString);
-          current += slotDuration;
-        }
-      });
-    }
-
-    if (generatedSlots.length === 0) return [];
-
-    const doctorIdNum = parseInt(formData.doctorId);
-    const timeOffs = timeOffRequests?.filter(r => r.staffId === doctorIdNum && r.status === 'approved') || [];
-    
-    if (timeOffs.length > 0) {
-       generatedSlots = generatedSlots.filter(slot => {
-         const slotDateTime = new Date(`${selectedScheduleDate}T${slot}:00`);
-         const slotEndDateTime = new Date(slotDateTime.getTime() + slotDuration * 60000);
-         
-         const isOverlap = timeOffs.some(timeOff => {
-            const timeOffStart = new Date(timeOff.startDateTime);
-            const timeOffEnd = new Date(timeOff.endDateTime);
-            return (slotDateTime < timeOffEnd && slotEndDateTime > timeOffStart);
-         });
-         return !isOverlap;
-       });
-    }
-
     const formatApptTime = (timeStr: string) => {
       if (!timeStr) return '';
       const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
@@ -127,51 +116,6 @@ export function Appointments({ appointments = [], reasons = [], departments = []
       return timeStr;
     };
 
-    const bookedAppointments = appointments.filter(apt => 
-      apt.date === selectedScheduleDate && apt.doctor === selectedDoctor?.name
-    ).map(apt => formatApptTime(apt.time));
-    
-    generatedSlots = generatedSlots.filter(slot => {
-       return !bookedAppointments.includes(slot);
-    });
-
-    const todayNum = new Date();
-    const istOptions: Intl.DateTimeFormatOptions = { 
-      timeZone: 'Asia/Kolkata', 
-      year: 'numeric', month: '2-digit', day: '2-digit', 
-      hour: '2-digit', minute: '2-digit', hour12: false 
-    };
-    const istParts = new Intl.DateTimeFormat('en-US', istOptions).formatToParts(todayNum);
-    const istMap: Record<string, string> = {};
-    istParts.forEach(({ type, value }) => istMap[type] = value);
-    
-    const istHour = istMap.hour === '24' ? '00' : istMap.hour;
-    const currentIstDate = `${istMap.year}-${istMap.month}-${istMap.day}`;
-    const currentIstTime = `${istHour}:${istMap.minute}`;
-
-    if (selectedScheduleDate === currentIstDate) {
-      generatedSlots = generatedSlots.filter(slot => slot >= currentIstTime);
-    } else if (selectedScheduleDate < currentIstDate) {
-      generatedSlots = [];
-    }
-
-    return generatedSlots.map((time, idx) => ({
-       id: idx,
-       fromTime: time,
-       toTime: (() => {
-         const [h, m] = time.split(':').map(Number);
-         const endMins = h * 60 + m + slotDuration;
-         return `${Math.floor(endMins / 60).toString().padStart(2, '0')}:${(endMins % 60).toString().padStart(2, '0')}`;
-       })(),
-       taskName: 'OPD'
-    }));
-  };
-
-  const availableSlots = getAvailableSlots();
-
-  const openEditModal = (apt: any) => {
-    const doctor = doctors.find(d => d.name === apt.doctor);
-    const dept = departments.find(d => d.name === apt.department);
     setFormData({
       patientName: apt.patient || '',
       patientId: apt.patientId ? apt.patientId.toString() : '',
@@ -185,7 +129,9 @@ export function Appointments({ appointments = [], reasons = [], departments = []
       setSelectedDate(apt.date);
       setSelectedScheduleDate(apt.date);
     }
-    setSelectedSlot(apt.time || '');
+    
+    // Convert e.g. "02:30 PM" to "14:30"
+    setSelectedSlot(formatApptTime(apt.time) || '');
     setEditingAppointment(apt);
     setIsEditing(true);
     setShowModal(true);
@@ -291,6 +237,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Time</th>
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500 min-w-[80px]">Patient ID</th>
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Patient</th>
+              <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Phone Number</th>
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Doctor</th>
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Reason</th>
               <th className="py-2.5 px-3.5 font-medium text-[11px] text-gray-500">Department</th>
@@ -304,6 +251,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
                 <td className={`py-2.5 px-3.5 font-medium ${apt.status === 'scheduled' ? 'text-warning' : 'text-accent'}`}>{apt.time}</td>
                 <td className="py-2.5 px-3.5 text-gray-500">{apt.patientId ? `P-${apt.patientId}` : '-'}</td>
                 <td className="py-2.5 px-3.5">{apt.patient}</td>
+                <td className="py-2.5 px-3.5">{apt.phoneNo || '-'}</td>
                 <td className="py-2.5 px-3.5">{apt.doctor}</td>
                 <td className="py-2.5 px-3.5">{apt.type || apt.reason}</td>
                 <td className="py-2.5 px-3.5">{apt.department}</td>
@@ -356,7 +304,7 @@ export function Appointments({ appointments = [], reasons = [], departments = []
                 <label className="block text-[11px] text-gray-500 mb-1">Available Slot *</label>
                 <select className="w-full p-2 border border-border-subtle rounded-md text-[12px] bg-surface2 focus:bg-white focus:border-accent outline-none" value={selectedSlot} onChange={e => setSelectedSlot(e.target.value)}>
                   <option value="">Select Slot</option>
-                  {availableSlots.map((slot, idx) => <option key={`slot-${slot.fromTime}-${idx}`} value={slot.fromTime}>{slot.fromTime} - {slot.toTime} ({slot.taskName || 'N/A'})</option>)}
+                  {availableSlots.map((slot, idx) => <option key={`slot-${slot.fromTime}-${idx}`} value={slot.fromTime}>{slot.displayTime || slot.fromTime} ({slot.taskName || 'N/A'})</option>)}
                 </select>
               </div>
               <div><label className="block text-[11px] text-gray-500 mb-1">Reason</label>
