@@ -132,4 +132,118 @@ const updateAppointment = async (req, res) => {
   }
 };
 
-module.exports = { getAppointments, createAppointment, updateAppointment };
+const getSlots = async (req, res) => {
+  const { doctorId, date } = req.query;
+  
+  if (!doctorId || !date) {
+    return res.status(400).json({ error: 'doctorId and date are required' });
+  }
+
+  try {
+    // 1. Get shift ID and shift details for the doctor
+    const [staffRows] = await db.query(`
+      SELECT s.shift_id, sh.schedule, sh.opd_slot_time 
+      FROM staff s 
+      LEFT JOIN shifts sh ON s.shift_id = sh.id 
+      WHERE s.id = ? AND s.is_active = 1
+    `, [doctorId]);
+
+    if (staffRows.length === 0) {
+      return res.status(404).json({ error: 'Doctor not found or inactive' });
+    }
+
+    const { schedule, opd_slot_time } = staffRows[0];
+    
+    if (!schedule) {
+      return res.json({ slots: [] });
+    }
+
+    // Parse the date to get the day of the week
+    const targetDate = new Date(date);
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const targetDayName = days[targetDate.getDay()];
+
+    let parsedSchedule;
+    try {
+      parsedSchedule = typeof schedule === 'string' ? JSON.parse(schedule) : schedule;
+    } catch (e) {
+      return res.status(500).json({ error: 'Failed to parse doctor schedule' });
+    }
+
+    const daySchedule = parsedSchedule.find(d => d.day === targetDayName);
+    if (!daySchedule || !daySchedule.tasks || daySchedule.tasks.length === 0) {
+      return res.json({ slots: [] }); // No slots for this day
+    }
+
+    // 2. Generate all possible slots based on the schedule
+    const allSlots = [];
+    const slotDurationMs = (opd_slot_time || 15) * 60000;
+
+    for (const task of daySchedule.tasks) {
+      if (!task.fromTime || !task.toTime) continue;
+      
+      const [fromHour, fromMin] = task.fromTime.split(':').map(Number);
+      const [toHour, toMin] = task.toTime.split(':').map(Number);
+      
+      let currentStartTime = new Date(targetDate);
+      currentStartTime.setHours(fromHour, fromMin, 0, 0);
+      
+      const endTime = new Date(targetDate);
+      endTime.setHours(toHour, toMin, 0, 0);
+
+      while (currentStartTime.getTime() + slotDurationMs <= endTime.getTime()) {
+        const timeStr = currentStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        // Also formatted for display AM/PM
+        const displayTime = currentStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        
+        allSlots.push({
+          time: timeStr.substring(0, 5), // "14:30"
+          displayTime,
+          isAvailable: true
+        });
+        currentStartTime = new Date(currentStartTime.getTime() + slotDurationMs);
+      }
+    }
+
+    // 3. Get existing appointments to filter booked slots
+    const startOfDay = `${date} 00:00:00`;
+    const endOfDay = `${date} 23:59:59`;
+    
+    const [appointments] = await db.query(`
+      SELECT appointment_time 
+      FROM appointments 
+      WHERE doctor_id = ? 
+      AND appointment_time >= ? 
+      AND appointment_time <= ?
+      AND status != 'cancelled'
+    `, [doctorId, startOfDay, endOfDay]);
+
+    // Format booked times (e.g. '14:30')
+    const bookedTimes = appointments.map(apt => {
+      const aptDate = new Date(apt.appointment_time);
+      // toLocaleTimeString ('14:30')
+      return aptDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).substring(0, 5);
+    });
+
+    // Mark slots as booked
+    const slots = allSlots.map(slot => {
+      if (bookedTimes.includes(slot.time)) {
+        slot.isAvailable = false;
+      }
+      return slot;
+    });
+
+    // Remove duplicates if tasks overlapped
+    const uniqueSlots = Array.from(new Map(slots.map(s => [s.time, s])).values());
+    
+    // Sort by time
+    uniqueSlots.sort((a, b) => a.time.localeCompare(b.time));
+
+    res.json({ slots: uniqueSlots });
+  } catch (error) {
+    console.error('Error fetching slots:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getAppointments, createAppointment, updateAppointment, getSlots };
